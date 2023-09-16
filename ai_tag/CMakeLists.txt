@@ -21,6 +21,7 @@ zephyr_include_directories_ifdef(CONFIG_MEMFAULT configuration/memfault)
 
 # Application directories
 add_subdirectory(src/modules)
+add_subdirectory(src/modem_utils)
 add_subdirectory(src/events)
 
 add_subdirectory_ifdef(CONFIG_CLOUD_MODULE src/cloud)

@@ -1,0 +1,159 @@
+#
+# Copyright (c) 2020 Nordic Semiconductor
+#
+# SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+#
+
+module = THINGSBOARD_IOT
+module-prompt = "Thingsboard IoT"
+orsource "../Kconfig.cloud_$(CLOUD_SERVICE_SELECTOR)"
+
+menuconfig $(module)
+	bool
+	prompt "Thingsboard IoT"
+
+if THINGSBOARD_IOT
+
+config THINGSBOARD_IOT_DEVICE_ID
+	string "Device ID"
+	help
+	  Device ID to be used when connecting to IoT hub and optionally DPS.
+	  Providing a device ID can also be done at run-time using the appropriate APIs.
+
+config THINGSBOARD_IOT_HOSTNAME
+	string "Thingsboard IoT hostname"
+	help
+	  Hostname to Thingsboard IoT instance.
+
+config THINGSBOARD_IOT_PORT_NUMBER
+	int "Thingsboard IoT port number"
+	help
+	  Port number to Thingsboard IoT  instance.
+
+config THINGSBOARD_IOT_DEVICE_TOKEN
+	string "Thingsboard IoT device token"
+	help
+	  Thingsboard IoT device token.
+
+config THINGSBOARD_IOT_DEVICE_PROVISION_KEY
+	string "Thingsboard IoT provision key"
+	help
+	  Thingsboard IoT provision secret.
+
+config THINGSBOARD_IOT_DEVICE_PROVISION_SECRET
+	string "Thingsboard IoT provision secret"
+	help
+	  Thingsboard IoT provision secret.
+
+config THINGSBOARD_IOT_DPS
+	bool "Device Provisioning Service"
+	select CJSON_LIB
+	depends on SETTINGS
+	help
+	  Enabling DPS will make the device connect to the specified DPS
+	  host name, provision the device and retrieve the IoT hub host name to
+	  use.
+
+config THINGSBOARD_IOT_USER_NAME_BUF_SIZE
+	int "User name max length"
+	default 160
+	help
+	  Maximum length of the user name.
+
+config THINGSBOARD_IOT_TOPIC_MAX_LEN
+	int "Max length of topic"
+	default 100
+	help
+	  Sets the maximum length of a topic. If you plan to use message properties,
+	  it should be considered to increase this value to fit the topic into the allocated
+	  buffers.
+
+config THINGSBOARD_IOT_MSG_PROPERTY_RECV_MAX_COUNT
+	int "Maximum number of property bag elements"
+	default 3
+	help
+	  The maximum number of message properties that can be parsed from a topic in an incoming
+	  MQTT message.
+	  Increasing this value will increase stack usage when parsing topics,
+	  and vice versa if decreasing it.
+
+config THINGSBOARD_IOT_MSG_PROPERTY_BUFFER_SIZE
+	int "Message property buffer size"
+	default 128
+	help
+	  Message properties are converted to a string before sending to Azure. This option
+	  can be used to configure the buffer size for the property string. The buffer is
+	  allocated on the stack, so it's beneficial to reduce it if message properties will not
+	  be used for device-originated messages.
+
+
+if THINGSBOARD_IOT_DPS
+
+config THINGSBOARD_IOT_DPS_ID_SCOPE
+	string "DPS ID scope"
+	help
+	  ID scope to be used in the provisioning request to DPS. The ID scope can also be provided
+	  at runtime.
+
+config THINGSBOARD_IOT_DPS_REG_ID
+	string "Registration ID"
+	help
+	  The registration ID to be used in the provisioning request to DPS.
+	  The registation ID can also be provided at runtime.
+
+config THINGSBOARD_IOT_DPS_HOSTNAME
+	string "DPS host name"
+	default "global.azure-devices-provisioning.net"
+	help
+	  Hostname for the DPS instance to use.
+
+config THINGSBOARD_IOT_DPS_TIMEOUT_SEC
+	int "DPS timeout"
+	default 90
+	help
+	  Timeout in seconds for device provisioning. If the device has not been assigned within
+	  the timeout, the provisioning attempt is terminated.
+	  This timeout is useful if the device can't reach the server and vice versa in the middle
+	  of the registration process.
+	  The timer is reset on every incoming MQTT message from the server.
+	  Note the difference between this timeout and MQTT_HELPER_SEND_TIMEOUT, which only
+	  affects send() calls.
+
+config THINGSBOARD_IOT_DPS_HOSTNAME_MAX_LEN
+	int "Thingsboard IoT  name max length"
+	default 64
+	help
+	  Maximum length for IoT  hostname.
+
+config THINGSBOARD_IOT_DPS_DEVICE_ID_MAX_LEN
+	int "Maximum length of device ID"
+	default 128
+
+config THINGSBOARD_IOT_DPS_TOPIC_BUFFER_SIZE
+	int "Topic buffer size"
+	default 224
+	help
+	  Topic buffer size for the topic used when sending registration request and status request to DPS.
+	  The buffer can be adjusted depending on the registration ID length and expected operation ID length.
+	  The operation ID is received from DPS after registration request is sent.
+
+config THINGSBOARD_IOT_DPS_USER_NAME_BUFFER_SIZE
+	int "User name buffer size"
+	default 256
+	help
+	  Size of the buffer where the user name is stored.
+
+config THINGSBOARD_IOT_DPS_OPERATION_ID_BUFFER_SIZE
+	int "Operation ID buffer size"
+	default 68
+	help
+	  Size of the buffer where the received operation ID is stored.
+
+endif # THINGSBOARD_IOT_DPS
+
+module=THINGSBOARD_IOT
+module-dep=LOG
+module-str=Thingsboard IoT
+source "${ZEPHYR_BASE}/subsys/logging/Kconfig.template.log_config"
+
+endif # THINGSBOARD_IOT
