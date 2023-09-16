@@ -9,4 +9,6 @@
 #include "aws_iot/json_protocol_names_aws_iot.h"
 #elif defined(CONFIG_CLOUD_CODEC_AZURE_IOT_HUB)
 #include "azure_iot_hub/json_protocol_names_azure_iot_hub.h"
+#elif defined(CONFIG_CLOUD_CODEC_THINGSBOARD_IOT)
+#include "thingsboard_iot/json_protocol_names_thingsboard_iot.h"
 #endif

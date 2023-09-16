@@ -12,6 +12,14 @@ target_sources_ifdef(CONFIG_AWS_IOT app
 target_sources_ifdef(CONFIG_AZURE_IOT_HUB app
                      PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/azure_iot_hub_integration.c)
 
+target_sources_ifdef(CONFIG_THINGSBOARD_IOT app
+                     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/thingsboard_iot_integration.c)
+
+if(DEFINED CONFIG_THINGSBOARD_IOT)
+    add_subdirectory(thingsboard_iot)
+    add_subdirectory(coap_handler)
+endif()
+
 target_sources_ifdef(CONFIG_NRF_CLOUD_MQTT app
                      PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/nrf_cloud_integration.c)
 

@@ -15,6 +15,7 @@ choice
 	default CLOUD_CODEC_NRF_CLOUD if NRF_CLOUD_MQTT
 	default CLOUD_CODEC_AWS_IOT if AWS_IOT
 	default CLOUD_CODEC_AZURE_IOT_HUB if AZURE_IOT_HUB
+	default CLOUD_CODEC_THINGSBOARD_IOT if THINGSBOARD_IOT
 	default CLOUD_CODEC_LWM2M if LWM2M_INTEGRATION
 
 config CLOUD_CODEC_NRF_CLOUD
@@ -28,6 +29,9 @@ config CLOUD_CODEC_AWS_IOT
 
 config CLOUD_CODEC_AZURE_IOT_HUB
 	bool "Enable Azure IoT Hub codec backend"
+
+config CLOUD_CODEC_THINGSBOARD_IOT
+	bool "Enable Thingsboard IoT codec backend"
 
 config CLOUD_CODEC_LWM2M
 	bool "Enable lwM2M codec backend"

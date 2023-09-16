@@ -280,6 +280,13 @@ struct cloud_codec_evt {
 	struct cloud_data_cfg config_update;
 };
 
+struct cloud_data_device_provision_request {
+	// @todo Add hard-coded array sizes to conf.
+	char device_provision_key[30];
+	char device_provision_secret[30];
+	char device_name[30];
+};
+
 /**
  * @brief Event handler prototype.
  *
@@ -438,6 +445,10 @@ int cloud_codec_encode_ui_data(struct cloud_codec_data *output,
  */
 int cloud_codec_encode_impact_data(struct cloud_codec_data *output,
 				   struct cloud_data_impact *impact_buf);
+
+
+int cloud_codec_encode_device_provision_request_data(struct cloud_codec_data *output,
+				   struct cloud_data_device_provision_request *dev_provision_buf);
 
 /**
  * @brief Encode a batch of cloud buffer data.
