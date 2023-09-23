@@ -12,8 +12,7 @@ if COAP_HELPER
 
 config COAP_HELPER_PORT
 	int "COAP broker port"
-	default 8883 if COAP_LIB_TLS
-	default 1883
+	default 5683
 	help
 	  Port number to connect to the COAP broker.
 
@@ -48,17 +47,19 @@ config COAP_HELPER_STACK_SIZE
 	  All COAP-related callbacks happen in context of this thread, so the stack size may have
 	  to be adjusted for your needs.
 
-config COAP_HELPER_RX_TX_BUFFER_SIZE
+config COAP_HELPER_TX_BUFFER_SIZE
 	int "Buffer sizes for the COAP library"
-	default 256
+	default 512
 	help
-	  Specifies maximum message size can be transmitted/received through
-	  COAP (exluding COAP PUBLISH payload).
+	  Specifies maximum message size can be transmitted through
+	  COAP.
 
-config COAP_HELPER_PAYLOAD_BUFFER_LEN
-	int "Size of the COAP PUBLISH payload buffer (receiving COAP messages)"
-	default 2048 if NRF_MODEM_LIB
-	default 4096
+config COAP_HELPER_RX_BUFFER_SIZE
+	int "Buffer sizes for the COAP library"
+	default 512
+	help
+	  Specifies maximum message size can be received through
+	  COAP.
 
 module = COAP_HELPER
 module-str = COAP helper library

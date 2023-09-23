@@ -12,7 +12,6 @@
  **********************************************************************************************************************/
 #include <stdio.h>
 
-/* STEP 2.2 - Include the header file for the CoAP library */
 #include <zephyr/net/coap.h>
 #include <zephyr/kernel.h>
 #include <zephyr/net/socket.h>
@@ -30,14 +29,6 @@
 /***********************************************************************************************************************
  * Macro Definitions
  *********************************************************************************************************************/
-/* STEP 4.1 - Define the macro for the message from the board */
-#define MESSAGE_TO_SEND "{\"provisionDeviceKey\":\"vw3l9jp1sqtez5vnnkse\", \"provisionDeviceSecret\":\"4pgyhqc2gsipsdxar2en\", \"deviceName\":\"YUSUFTEST1\"}"
-
-#define CONFIG_COAP_SERVER_HOSTNAME "44.196.172.187"
-#define CONFIG_COAP_SERVER_PORT 5683
-
-#define CONFIG_COAP_TX_RESOURCE "/api/v1/kx8Rb61aelsY6zo2UakB/telemetry"
-
 
 /* STEP 4.2 - Define the macros for the CoAP version and message length */
 #define APP_COAP_VERSION 1
@@ -49,60 +40,64 @@ LOG_MODULE_REGISTER(MODULE, LOG_LEVEL_DBG);
 /***********************************************************************************************************************
  * Typedef Definitions
  **********************************************************************************************************************/
-
+enum dns_state
+{
+    RESOLVED,
+    NOT_RESOLVED
+};
 /***********************************************************************************************************************
  * Private Global Variables
  **********************************************************************************************************************/
-/* STEP 5 - Declare the buffer coap_buf to receive the response. */
-static uint8_t coap_buf[APP_COAP_MAX_MSG_LEN];
 
-/* STEP 6.1 - Define the CoAP message token next_token */
 static uint16_t next_token;
 
 static int sock;
 static struct sockaddr_storage server;
 
-static struct dns_server_lookup
-{
-    uint32_t addr;
-    uint8_t addr_u8[4];
-};
+static enum dns_state dns_state = NOT_RESOLVED;
 
-static struct dns_server_lookup dns_servers[] =
-    {
-        // Google DNS primary
-        {
-            .addr = 134744072,
-            .addr_u8 = {8, 8, 8, 8}},
-        // Google DNS secondary
-        {
-            .addr = 134743044,
-            .addr_u8 = {8, 8, 4, 4}},
-        // OpenDNS primary
-        {
-            .addr = 3494108894,
-            .addr_u8 = {208, 67, 222, 222}},
-        // OpenDNS secondary
-        {
-            .addr = 3494108894,
-            .addr_u8 = {208, 67, 222, 222}},
-        {.addr = 0,
-         .addr_u8 = {
-             0,
-             0,
-             0,
-         }}};
+// static struct dns_server_lookup
+// {
+//     uint32_t addr;
+//     uint8_t addr_u8[4];
+// };
+
+// static struct dns_server_lookup dns_servers[] =
+//     {
+//         // Google DNS primary
+//         {
+//             .addr = 134744072,
+//             .addr_u8 = {8, 8, 8, 8}},
+//         // Google DNS secondary
+//         {
+//             .addr = 134743044,
+//             .addr_u8 = {8, 8, 4, 4}},
+//         // OpenDNS primary
+//         {
+//             .addr = 3494108894,
+//             .addr_u8 = {208, 67, 222, 222}},
+//         // OpenDNS secondary
+//         {
+//             .addr = 3494108894,
+//             .addr_u8 = {208, 67, 222, 222}},
+//         {.addr = 0,
+//          .addr_u8 = {
+//              0,
+//              0,
+//              0,
+//          }}};
 /***********************************************************************************************************************
  * Private Function Definitions
  **********************************************************************************************************************/
-static int coap_handler_client_put_send(enum coap_msgtype msg_type, const char *message, size_t message_size)
+static int coap_handler_client_put_send(enum coap_msgtype msg_type, const char *uri_path, const char *message, size_t message_size)
 {
     int err;
     struct coap_packet request;
 
     next_token++;
 
-    /* STEP 8.1 - Initialize the CoAP packet and append the resource path */
+    uint8_t coap_buf[CONFIG_COAP_HELPER_RX_BUFFER_SIZE];
+
     err = coap_packet_init(&request, coap_buf, sizeof(coap_buf),
                            APP_COAP_VERSION, msg_type,
                            sizeof(next_token), (uint8_t *)&next_token,
@@ -114,15 +109,14 @@ static int coap_handler_client_put_send(enum coap_msgtype msg_type, const char *
     }
 
     err = coap_packet_append_option(&request, COAP_OPTION_URI_PATH,
-                                    (uint8_t *)CONFIG_COAP_TX_RESOURCE,
-                                    strlen(CONFIG_COAP_TX_RESOURCE));
+                                    (uint8_t *)uri_path,
+                                    strlen(uri_path));
     if (err < 0)
     {
         LOG_ERR("Failed to encode CoAP option, %d\n", err);
         return err;
     }
 
-    /* STEP 8.2 - Append the content format as plain text */
     const uint8_t text_plain = COAP_CONTENT_FORMAT_TEXT_PLAIN;
     err = coap_packet_append_option(&request, COAP_OPTION_CONTENT_FORMAT,
                                     &text_plain,
@@ -133,7 +127,6 @@ static int coap_handler_client_put_send(enum coap_msgtype msg_type, const char *
         return err;
     }
 
-    /* STEP 8.3 - Add the payload to the message */
     err = coap_packet_append_payload_marker(&request);
     if (err < 0)
     {
@@ -160,13 +153,45 @@ static int coap_handler_client_put_send(enum coap_msgtype msg_type, const char *
     return 0;
 }
 
+static const char *dns_state_name_get(enum dns_state state)
+{
+    switch (state)
+    {
+    case RESOLVED:
+        return "RESOLVED";
+    case NOT_RESOLVED:
+        return "NOT_RESOLVED";
+    default:
+        return "STATE_UNKNOWN";
+    }
+}
+
+static void dns_state_set(enum dns_state new_state)
+{
+    LOG_DBG("DNS state transition: %s --> %s",
+            dns_state_name_get(dns_state),
+            dns_state_name_get(new_state));
+    dns_state = new_state;
+}
+
+static bool is_dns_resolved()
+{
+    return (dns_state == RESOLVED) ? true : false;
+}
+
 /***********************************************************************************************************************
  * Public Function Definitions
  **********************************************************************************************************************/
 
-
-int coap_handler_resolve_dns_address(void)
+int coap_handler_resolve_dns_address(const char *server_hostname)
 {
+
+    if (is_dns_resolved())
+    {
+        LOG_WRN("DNS address is already resolved.");
+        return 0;
+    }
+
     int err;
     struct addrinfo *result;
     struct addrinfo hints = {
@@ -181,7 +206,7 @@ int coap_handler_resolve_dns_address(void)
     // LOG_DBG("DNS is set to %d - result %d", dns.s_addr, dns_err);
     // Todo End
 
-    err = getaddrinfo(CONFIG_COAP_SERVER_HOSTNAME, NULL, &hints, &result);
+    err = getaddrinfo(server_hostname, NULL, &hints, &result);
     if (err != 0)
     {
         LOG_ERR("ERROR: getaddrinfo failed %d\n", err);
@@ -194,35 +219,33 @@ int coap_handler_resolve_dns_address(void)
         return -ENOENT;
     }
 
-    /* IPv4 Address. */
     struct sockaddr_in *server4 = ((struct sockaddr_in *)&server);
 
     server4->sin_addr.s_addr =
         ((struct sockaddr_in *)result->ai_addr)->sin_addr.s_addr;
     server4->sin_family = AF_INET;
-    server4->sin_port = htons(CONFIG_COAP_SERVER_PORT);
+    server4->sin_port = htons(CONFIG_COAP_HELPER_PORT);
 
     inet_ntop(AF_INET, &server4->sin_addr.s_addr, ipv4_addr,
               sizeof(ipv4_addr));
     LOG_INF("IPv4 Address found %s\n", ipv4_addr);
 
-    /* Free the address. */
     freeaddrinfo(result);
 
+    dns_state_set(RESOLVED);
     return 0;
 }
 
-int coap_handler_client_put_confirmable_send(const char *message, size_t message_size)
+int coap_handler_client_put_confirmable_send(const char *uri_path, const char *message, size_t message_size)
 {
-    return coap_handler_client_put_send(COAP_TYPE_CON, message, message_size);
+    return coap_handler_client_put_send(COAP_TYPE_CON, uri_path, message, message_size);
 }
 
-int coap_handler_client_put_non_confirmable_send(const char *message, size_t message_size)
+int coap_handler_client_put_non_confirmable_send(const char *uri_path, const char *message, size_t message_size)
 {
-    return coap_handler_client_put_send(COAP_TYPE_NON_CON, message, message_size);
+    return coap_handler_client_put_send(COAP_TYPE_NON_CON, uri_path, message, message_size);
 }
 
-/**@brief Initialize the CoAP client */
 int coap_handler_client_init(void)
 {
     int err;

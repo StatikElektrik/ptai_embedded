@@ -32,13 +32,13 @@ extern "C" {
 /***********************************************************************************************************************
  * Public Function Prototypes
  **********************************************************************************************************************/
-int coap_handler_resolve_dns_address(void);
-
-int coap_handler_client_put_confirmable_send(const char *message, size_t message_size);
-
-int coap_handler_client_put_non_confirmable_send(const char *message, size_t message_size);
-
 int coap_handler_client_init(void);
+
+int coap_handler_resolve_dns_address(const char* server_hostname);
+
+int coap_handler_client_put_confirmable_send(const char *uri_path, const char *message, size_t message_size);
+
+int coap_handler_client_put_non_confirmable_send(const char *uri_path, const char *message, size_t message_size);
 
 int coap_handler_client_handle_response(uint8_t *buf, int received);
 

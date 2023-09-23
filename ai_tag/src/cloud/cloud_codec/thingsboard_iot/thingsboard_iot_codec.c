@@ -473,10 +473,11 @@ int cloud_codec_encode_device_provision_request_data(struct cloud_codec_data *ou
 		return -ENOMEM;
 	}
 
-	err = json_common_ui_data_add(root_obj, dev_provision_buf,
-				      JSON_COMMON_ADD_DATA_TO_OBJECT,
-				      DATA_DEVICE_PROVISION_REQUEST,
-				      NULL);
+	// err = json_common_ui_data_add(root_obj, dev_provision_buf,
+	// 			      JSON_COMMON_ADD_DATA_TO_OBJECT,
+	// 			      DATA_DEVICE_PROVISION_REQUEST,
+	// 			      NULL);
+	err = 0;
 	if (err) {
 		goto exit;
 	}
