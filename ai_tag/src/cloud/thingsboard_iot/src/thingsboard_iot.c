@@ -29,11 +29,25 @@
 
 #include <zephyr/logging/log.h>
 
-LOG_MODULE_REGISTER(thingsboard_iot, LOG_LEVEL_DBG);
 /***********************************************************************************************************************
  * Macro Definitions
  **********************************************************************************************************************/
-#define DEVICE_TOKEN_SIZE 30
+
+#define MODULE thingsboard_iot
+LOG_MODULE_REGISTER(MODULE, LOG_LEVEL_DBG);
+
+// #define THINGSBOARD_IOT_SETTINGS_KEY "thingsboard_iot"
+// #define THINGSBOARD_IOT_SETTINGS_KEY_CONFIG "config"
+
+#if defined(CONFIG_THINGSBOARD_IOT_DEVICE_TOKEN)
+#define THINGSBOARD_IOT_DEVICE_TOKEN_SIZE 21
+#define THINGSBOARD_IOT_IS_DEVICE_TOKEN_DEFINED true
+#define THINGSBOARD_IOT_DEVICE_TOKEN CONFIG_THINGSBOARD_IOT_DEVICE_TOKEN
+#else
+#define THINGSBOARD_IOT_DEVICE_TOKEN_SIZE CONFIG_THINGSBOARD_IOT_DEVICE_TOKEN_SIZE
+#define THINGSBOARD_IOT_IS_DEVICE_TOKEN_DEFINED false
+#endif
+
 #define CONFIG_THINGSBOARD_IOT_STACK_SIZE 1024
 /***********************************************************************************************************************
  * Typedef Definitions
@@ -51,7 +65,7 @@ enum connection_state
 	/* Disconnecting from Azure IoT Hub. */
 	STATE_DISCONNECTING,
 
-	STATE_COUNT,
+	STATE_COUNT
 };
 
 enum device_provision_state
@@ -60,22 +74,25 @@ enum device_provision_state
 	NOT_PROVISIONED
 };
 
-enum dns_state
+struct thingsboard_iot_dev_settings
 {
-	RESOLVED,
-	NOT_RESOLVED
+	char device_token[THINGSBOARD_IOT_DEVICE_TOKEN_SIZE];
 };
 
 /***********************************************************************************************************************
  * Private Global Variables
  **********************************************************************************************************************/
 // static K_SEM_DEFINE(connection_poll_sem, 0, 1);
+// static K_SEM_DEFINE(config_load_sem, 0, 1);
 
 static enum connection_state connection_state = STATE_UNINIT;
 static enum device_provision_state provision_state = NOT_PROVISIONED;
-static enum dns_state dns_state = NOT_RESOLVED;
 
 static thingsboard_iot_evt_handler_t evt_handler;
+static struct thingsboard_iot_dev_settings dev_settings;
+
+// static int config_settings_handler(const char *key, size_t len_rd, settings_read_cb read_cb, void *cb_arg);
+// SETTINGS_STATIC_HANDLER_DEFINE(MODULE, THINGSBOARD_IOT_SETTINGS_KEY, NULL, config_settings_handler, NULL, NULL);
 
 /***********************************************************************************************************************
  * Private Function Definitions
@@ -101,16 +118,16 @@ static const char *device_provision_state_name_get(enum device_provision_state s
 	}
 }
 
-static const char *dns_state_name_get(enum dns_state state)
+static const char *thingsboard_iot_message_type_name_get_lower_case(enum thingsboard_iot_message_type msg_type)
 {
-	switch (state)
+	switch (msg_type)
 	{
-	case RESOLVED:
-		return "RESOLVED";
-	case NOT_RESOLVED:
-		return "NOT_RESOLVED";
+	case TELEMETRY:
+		return "telemetry";
+	case ATTRIBUTE:
+		return "attribute";
 	default:
-		return "STATE_UNKNOWN";
+		return "";
 	}
 }
 
@@ -185,7 +202,7 @@ static void connection_state_set(enum connection_state new_state)
 		break;
 	}
 
-	LOG_DBG("State transition: %s --> %s",
+	LOG_DBG("Connection state transition: %s --> %s",
 			connection_state_name_get(connection_state),
 			connection_state_name_get(new_state));
 
@@ -194,21 +211,10 @@ static void connection_state_set(enum connection_state new_state)
 
 static void device_provision_state_set(enum device_provision_state new_state)
 {
+	LOG_DBG("Device provision state transition: %s --> %s",
+			device_provision_state_name_get(provision_state),
+			device_provision_state_name_get(new_state));
 	provision_state = new_state;
-	LOG_DBG("New device provision state: %s",
-			device_provision_state_name_get(provision_state));
-}
-
-static void dns_state_set(enum dns_state new_state)
-{
-	dns_state = new_state;
-	LOG_DBG("New dns state: %s",
-			dns_state_name_get(dns_state));
-}
-
-static bool is_dns_resolved()
-{
-	return (dns_state == RESOLVED) ? true : false;
 }
 
 static bool is_device_registered()
@@ -250,27 +256,46 @@ static void request_provision(const char *device_name, const char *device_provis
 		return;
 	}
 
-	err = coap_handler_client_put_confirmable_send(codec.buf, codec.len);
+	err = coap_handler_client_put_confirmable_send("/api/v1/provision", codec.buf, codec.len);
 	if (err < 0)
 	{
 		LOG_ERR("Connect failed : %d\n", err);
 	}
 }
 
-static void send_attribute_data(const char *device_token, const char *data, size_t data_len)
+// static void send_attribute_data(const char *device_token, const char *data, size_t data_len)
+// {
+// }
+
+// static void send_telemetry_data(const char *device_token, const char *data, size_t data_len)
+// {
+// }
+
+static bool is_dev_token_saved()
 {
+	size_t token_len = strlen(dev_settings.device_token);
+	if (token_len < THINGSBOARD_IOT_DEVICE_TOKEN_SIZE)
+	{
+		LOG_DBG("Device token is not saved to the flash.");
+		return false;
+	}
+	return true;
 }
 
-static void send_telemetry_data(const char *device_token, const char *data, size_t data_len)
-{
-}
-
-static int read_device_token(char *buffer, size_t buffer_size)
+static int read_device_token()
 {
 	// @todo Implement later.
 	// If config is defined, read it from there, if not read it from the flash.
-	strncpy(buffer, "kx8Rb61aelsY6zo2UakB", buffer_size);
-	return 0;
+	int err = 0;
+	if (THINGSBOARD_IOT_IS_DEVICE_TOKEN_DEFINED)
+	{
+		strncpy(dev_settings.device_token, THINGSBOARD_IOT_DEVICE_TOKEN, THINGSBOARD_IOT_DEVICE_TOKEN_SIZE);
+	}
+	else
+	{
+		err = is_dev_token_saved();
+	}
+	return err;
 }
 
 static void register_device()
@@ -324,35 +349,129 @@ static void register_device()
 // 	}
 // }
 
+/* Forward declarations */
+
+/* Private API */
+
+// static int config_settings_handler(const char *key, size_t len_rd, settings_read_cb read_cb, void *cb_arg)
+// {
+// 	if (!key)
+// 	{
+// 		LOG_ERR("Invalid key");
+// 		return -EINVAL;
+// 	}
+
+// 	LOG_DBG("Settings key: %s, size: %d", key, len_rd);
+
+// 	if (!strncmp(key, THINGSBOARD_IOT_SETTINGS_KEY_CONFIG, strlen(THINGSBOARD_IOT_SETTINGS_KEY_CONFIG)))
+// 	{
+// 		size_t len = read_cb(cb_arg, &dev_settings, sizeof(dev_settings));
+// 		if (len > 0)
+// 		{
+// 			return 0;
+// 		}
+
+// 		LOG_ERR("No settings data read.");
+// 		return -ENODATA;
+// 	}
+
+// 	k_sem_give(&config_load_sem);
+// 	return -ENOTSUP;
+// }
+
+// static int enable_settings(void)
+// {
+// 	int err = settings_subsys_init();
+// 	if (err)
+// 	{
+// 		LOG_ERR("settings_subsys_init, error: %d", err);
+// 		return err;
+// 	}
+
+// 	err = settings_load_subtree(THINGSBOARD_IOT_SETTINGS_KEY);
+// 	if (err)
+// 	{
+// 		LOG_ERR("settings_load_subtree, error: %d", err);
+// 		return err;
+// 	}
+
+// 	/* Wait up to 1 seconds for the settings API to load the device configuration stored
+// 	 * to flash, if any.
+// 	 */
+// 	if (k_sem_take(&config_load_sem, K_SECONDS(1)) != 0)
+// 	{
+// 		LOG_DBG("Failed retrieveing the device configuration from flash in time");
+// 	}
+
+// 	return err;
+// }
+
+// static void save_settings(const struct thingsboard_iot_dev_settings *dev_settings, size_t settings_size)
+// {
+// 	LOG_INF("Storing state to flash");
+
+// 	int err = settings_save_one(THINGSBOARD_IOT_SETTINGS_KEY "/" THINGSBOARD_IOT_SETTINGS_KEY_CONFIG, dev_settings, settings_size);
+
+// 	if (err)
+// 	{
+// 		LOG_ERR("Storing state to flash failed");
+// 	}
+// }
+
+static void create_uri_path(char *uri_path, size_t uri_path_size, const char *device_token, const char *path_ending)
+{
+	snprintf(uri_path, uri_path_size, "/api/v1/%s/%s", device_token, path_ending);
+}
+
+// static int init_device_register()
+// {
+// 	return read_device_token();
+// }
+
 /***********************************************************************************************************************
  * Public Function Definitions
  **********************************************************************************************************************/
 
 int thingsboard_iot_init(thingsboard_iot_evt_handler_t event_handler)
 {
-	if (event_handler == NULL) {
+	if (event_handler == NULL)
+	{
 		LOG_ERR("Event handler must be provided");
 		return -EINVAL;
 	}
-	
-	char device_token[DEVICE_TOKEN_SIZE];
-	device_token[0] = '\0';
 
-	int err = read_device_token(device_token, DEVICE_TOKEN_SIZE);
+	// int err = enable_settings();
+	// if (err)
+	// {
+	// 	LOG_ERR("enable_settings, error: %d", err);
+	// 	return err;
+	// }
+
+	// err = init_device_register();
+	// if (err)
+	// {
+	// 	LOG_ERR("init_device_register, error: %d", err);
+	// 	return err;
+	// }
+
+	// char device_token[THINGSBOARD_IOT_DEVICE_TOKEN_SIZE];
+	// device_token[0] = '\0';
+
+	int err = read_device_token();
 	if (err != 0)
 	{
 		LOG_ERR("Could not read the device token\n");
 		return -1;
 	}
 
-	if (strlen(device_token) == 0)
-	{
-		LOG_DBG("Device token is empty.");
-		return -1;
-	}
+	// if (strlen(device_token) == 0)
+	// {
+	// 	LOG_DBG("Device token is empty.");
+	// 	return -1;
+	// }
 
-	LOG_DBG("Device token read as : %s", device_token);
-	
+	// LOG_DBG("Device token read as : %s", device_token);
+
 	evt_handler = event_handler;
 
 	device_provision_state_set(PROVISIONED);
@@ -387,18 +506,12 @@ int thingsboard_iot_connect(const struct thingsboard_iot_config *config)
 
 	thingsboard_iot_notify_event(&evt);
 
-	// @todo Offload this check to resolve_dns_address func.
-	int err;
-	if (!is_dns_resolved())
-	{
-		LOG_WRN("Trying to initialize DNS address.");
-		err = coap_handler_resolve_dns_address();
-	}
+	int err = coap_handler_resolve_dns_address(CONFIG_THINGSBOARD_IOT_HOSTNAME);
 	if (err != 0)
 	{
+		LOG_WRN("Could not resolve the dns address for %s", CONFIG_THINGSBOARD_IOT_HOSTNAME);
 		return -1;
 	}
-	dns_state_set(RESOLVED);
 
 	if (coap_handler_client_init() != 0)
 	{
@@ -461,16 +574,19 @@ int thingsboard_iot_send_data(const struct thingsboard_iot_msg *const tx_data)
 		return -ENOTCONN;
 	}
 
-	int err = 0;
+	char uri_path[CONFIG_THINGSBOARD_IOT_COAP_URI_PATH_LEN];
+	create_uri_path(uri_path, sizeof(uri_path), dev_settings.device_token,
+					thingsboard_iot_message_type_name_get_lower_case(tx_data->msg_type));
 
+	int err = 0;
 	switch (tx_data->confirm_type)
 	{
 	case CONFIRMABLE_MESSAGE:
-		err = coap_handler_client_put_confirmable_send(tx_data->payload.ptr, tx_data->payload.size);
+		err = coap_handler_client_put_confirmable_send(uri_path, tx_data->payload.ptr, tx_data->payload.size);
 		break;
 
 	case NON_CONFIRMABLE_MESSAGE:
-		err = coap_handler_client_put_non_confirmable_send(tx_data->payload.ptr, tx_data->payload.size);
+		err = coap_handler_client_put_non_confirmable_send(uri_path, tx_data->payload.ptr, tx_data->payload.size);
 		break;
 
 	default:
