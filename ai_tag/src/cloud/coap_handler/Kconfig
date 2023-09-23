@@ -3,42 +3,42 @@
 # SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
 #
 
-menuconfig COAP_HELPER
+menuconfig COAP_HANDLER
 	bool "CoAp helper library"
 	help
 	  Convenience library that simplifies Zephyr COAP API and socket handling.
 
-if COAP_HELPER
+if COAP_HANDLER
 
-config COAP_HELPER_PORT
+config COAP_HANDLER_PORT
 	int "COAP broker port"
 	default 5683
 	help
 	  Port number to connect to the COAP broker.
 
-config COAP_HELPER_SEND_TIMEOUT
+config COAP_HANDLER_SEND_TIMEOUT
 	bool "Send data with socket timeout"
 	default y
 	help
 	  Configures a timeout on the COAP socket to ensure that a call to the send
 	  function will not block indefinitely. To configure the length of the timeout,
-	  use COAP_HELPER_SEND_TIMEOUT_SEC.
+	  use COAP_HANDLER_SEND_TIMEOUT_SEC.
 
-config COAP_HELPER_SEND_TIMEOUT_SEC
+config COAP_HANDLER_SEND_TIMEOUT_SEC
 	int "Send timeout"
-	depends on COAP_HELPER_SEND_TIMEOUT
+	depends on COAP_HANDLER_SEND_TIMEOUT
 	default 60
 	help
 	  Timeout in seconds to use when the COAP socket is configured to
-	  send with a timeout by enabling COAP_HELPER_SEND_TIMEOUT.
+	  send with a timeout by enabling COAP_HANDLER_SEND_TIMEOUT.
 
-config COAP_HELPER_STATIC_IP_ADDRESS
+config COAP_HANDLER_STATIC_IP_ADDRESS
 	string "Static IP address"
 	help
 	  Set a static IP address to use when connecting to the COAP broker.
 	  Leave the string empty to use DNS to resolve the IoT Hub hostname instead.
 
-config COAP_HELPER_STACK_SIZE
+config COAP_HANDLER_STACK_SIZE
 	int "Connection thread stack size"
 	default 2560
 	help
@@ -47,22 +47,23 @@ config COAP_HELPER_STACK_SIZE
 	  All COAP-related callbacks happen in context of this thread, so the stack size may have
 	  to be adjusted for your needs.
 
-config COAP_HELPER_TX_BUFFER_SIZE
+config COAP_HANDLER_TX_BUFFER_SIZE
 	int "Buffer sizes for the COAP library"
 	default 512
 	help
 	  Specifies maximum message size can be transmitted through
 	  COAP.
 
-config COAP_HELPER_RX_BUFFER_SIZE
+config COAP_HANDLER_RX_BUFFER_SIZE
 	int "Buffer sizes for the COAP library"
 	default 512
 	help
 	  Specifies maximum message size can be received through
 	  COAP.
 
-module = COAP_HELPER
-module-str = COAP helper library
+module = COAP_HANDLER
+module-dep=LOG
+module-str = COAP handler library
 source "${ZEPHYR_BASE}/subsys/logging/Kconfig.template.log_config"
 
-endif # COAP_HELPER
+endif # COAP_HANDLER
