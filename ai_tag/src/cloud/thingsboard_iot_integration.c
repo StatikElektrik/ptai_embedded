@@ -15,7 +15,7 @@
 #define MODULE thingsboard_iot_integration
 
 #include <zephyr/logging/log.h>
-LOG_MODULE_REGISTER(MODULE, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(MODULE, CONFIG_CLOUD_INTEGRATION_LOG_LEVEL);
 
 #if !defined(CONFIG_CLOUD_CLIENT_ID_USE_CUSTOM)
 #define CLIENT_ID_LEN HW_ID_LEN

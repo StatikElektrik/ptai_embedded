@@ -34,7 +34,7 @@
  **********************************************************************************************************************/
 
 #define MODULE thingsboard_iot
-LOG_MODULE_REGISTER(MODULE, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(MODULE, CONFIG_THINGSBOARD_IOT_LOG_LEVEL);
 
 // #define THINGSBOARD_IOT_SETTINGS_KEY "thingsboard_iot"
 // #define THINGSBOARD_IOT_SETTINGS_KEY_CONFIG "config"
