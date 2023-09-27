@@ -256,7 +256,7 @@ static void request_provision(const char *device_name, const char *device_provis
 		return;
 	}
 
-	err = coap_handler_client_put_confirmable_send("/api/v1/provision", codec.buf, codec.len);
+	err = coap_handler_client_post_confirmable_send("/api/v1/provision", codec.buf, codec.len);
 	if (err < 0)
 	{
 		LOG_ERR("Connect failed : %d\n", err);
@@ -506,17 +506,10 @@ int thingsboard_iot_connect(const struct thingsboard_iot_config *config)
 
 	thingsboard_iot_notify_event(&evt);
 
-	int err = coap_handler_resolve_dns_address(CONFIG_THINGSBOARD_IOT_HOSTNAME);
-	if (err != 0)
+	if (coap_handler_client_init(CONFIG_THINGSBOARD_IOT_HOSTNAME))
 	{
-		LOG_WRN("Could not resolve the dns address for %s", CONFIG_THINGSBOARD_IOT_HOSTNAME);
+		LOG_INF("Failed to initialize coap client");
 		return -1;
-	}
-
-	if (coap_handler_client_init() != 0)
-	{
-		LOG_INF("Failed to initialize client");
-		return 0;
 	}
 
 	// k_sem_give(&connection_poll_sem);
@@ -530,7 +523,7 @@ int thingsboard_iot_connect(const struct thingsboard_iot_config *config)
 
 	evt.type = THINGSBOARD_IOT_EVT_CONNECTED;
 	thingsboard_iot_notify_event(&evt);
-	return err;
+	return 0;
 }
 
 int thingsboard_iot_disconnect(void)
@@ -582,11 +575,11 @@ int thingsboard_iot_send_data(const struct thingsboard_iot_msg *const tx_data)
 	switch (tx_data->confirm_type)
 	{
 	case CONFIRMABLE_MESSAGE:
-		err = coap_handler_client_put_confirmable_send(uri_path, tx_data->payload.ptr, tx_data->payload.size);
+		err = coap_handler_client_post_confirmable_send(uri_path, tx_data->payload.ptr, tx_data->payload.size);
 		break;
 
 	case NON_CONFIRMABLE_MESSAGE:
-		err = coap_handler_client_put_non_confirmable_send(uri_path, tx_data->payload.ptr, tx_data->payload.size);
+		err = coap_handler_client_post_non_confirmable_send(uri_path, tx_data->payload.ptr, tx_data->payload.size);
 		break;
 
 	default:
