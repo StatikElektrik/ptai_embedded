@@ -1,9 +1,7 @@
-/// NOT FINISHED
-
 /**
-* @brief 
+* @brief Interface to use Thingsboard IoT Device Management Platform 
 *
-* @file 
+* @file thingsboard_iot.h
 */
 
 #ifndef SRC_CLOUD_THINGSBOARD_IOT_
@@ -23,7 +21,7 @@ extern "C" {
 
 //Third-party Libraries
 
-// Borda Libraries
+//PTAI Libraries
 
 /***********************************************************************************************************************
  * Macro Definitions
@@ -32,14 +30,6 @@ extern "C" {
 /***********************************************************************************************************************
  * Typedef Definitions
  **********************************************************************************************************************/
-
-// typedef enum
-// {
-//     TEMP_HUM_ERROR_NONE,
-//     TEMP_HUM_ERROR_GENERAL,
-//     TEMP_HUM_ERROR_BUFFER
-// } temp_hum_error_t;
-
 struct thingsboard_iot_buf {
 	char *ptr;
 	size_t size;
@@ -52,7 +42,7 @@ enum thingsboard_iot_evt_type {
 	THINGSBOARD_IOT_EVT_DISCONNECTED,
 	THINGSBOARD_IOT_EVT_CONNECTION_FAILED,
 	THINGSBOARD_IOT_EVT_DATA_RECEIVED,
-	THINGSBOARD_IOT_ERROR
+	THINGSBOARD_IOT_EVT_ERROR
 };
 
 enum thingsboard_iot_confirm_type {
@@ -72,50 +62,69 @@ struct thingsboard_iot_msg {
 };
 
 struct thingsboard_iot_evt {
-	/** Type of event. */
 	enum thingsboard_iot_evt_type type;
-    int dummy_data;
+    union {
+		int err;
+	} data;
 };
 
-/** @brief Structure for Azure IoT Hub connection parameters. */
 struct thingsboard_iot_config {
-	/** Hostname to IoT Hub to connect to.
-	 *  If the buffer size is zero, the device ID provided by
-	 *  @kconfig{CONFIG_AZURE_IOT_HUB_HOSTNAME} is used. If DPS is enabled and `use_dps` is
-	 *  set to true, the provided hostname is ignored.
-	 */
 	struct thingsboard_iot_buf hostname;
-	/** Device id for the Azure IoT Hub connection.
-	 *  If the buffer size is zero, the device ID provided by Kconfig is used.
-	 */
 	struct thingsboard_iot_buf device_id;
-
-	/** Use DPS to obtain hostname and device ID if true.
-	 *  Using DPS requires that @kconfig{CONFIG_AZURE_IOT_HUB_DPS} is enabled and DPS
-	 *  configured accordingly.
-	 *  If a hostname and device ID have already been obtained previously, the stored values
-	 *  will be used. To re-run DPS, the DPS information must be reset first.
-	 *  Note that using this option will use the device ID as DPS registration ID and the
-	 *  ID cope from @kconfig{CONFIG_AZURE_IOT_HUB_DPS_ID_SCOPE}.
-	 *  For more fine-grained control over DPS, use the azure_iot_hub_dps APIs directly insted.
-	 */
-	bool use_dps;
 };
 
-typedef void (*thingsboard_iot_evt_handler_t)(struct thingsboard_iot_evt *evt);
+/** @brief Thingsboard IoT library event handler.
+ *
+ *  @param p_evt Pointer to event structure.
+ */
+typedef void (*thingsboard_iot_evt_handler_t)(struct thingsboard_iot_evt *p_evt);
 
 /***********************************************************************************************************************
  * Public Function Prototypes
  **********************************************************************************************************************/
 
+/**
+ * @brief Initialize the ThingsBoard IoT library.
+ *
+ * This function initializes the library and sets up the event handler. It also reads the device token
+ * and initializes the device provision and connection states.
+ *
+ * @param event_handler The event handler function to handle ThingsBoard IoT events.
+ * @return 0 on success, a negative error code on failure.
+ */
 int thingsboard_iot_init(thingsboard_iot_evt_handler_t event_handler);
 
-int thingsboard_iot_connect(const struct thingsboard_iot_config *config);
+/**
+ * @brief Connect to the ThingsBoard IoT platform.
+ *
+ * This function initiates a connection to the ThingsBoard IoT platform using the provided configuration.
+ *
+ * @param p_config Pointer to the configuration for connecting to the platform.
+ * @return 0 on success, a negative error code on failure.
+ */
+int thingsboard_iot_connect(const struct thingsboard_iot_config *p_config);
 
+/**
+ * @brief Disconnect from the ThingsBoard IoT platform.
+ *
+ * This function disconnects from the ThingsBoard IoT platform if connected.
+ * 
+ * @warning Not implemented yet.
+ *
+ * @return 0 on success, a negative error code on failure.
+ */
 int thingsboard_iot_disconnect(void);
 
-int thingsboard_iot_send_data(const struct thingsboard_iot_msg *const tx_data);
-
+/**
+ * @brief Send data to the ThingsBoard IoT platform.
+ *
+ * This function sends data to the ThingsBoard IoT platform based on the provided message type
+ * and confirmation type.
+ *
+ * @param p_tx_data Pointer to the data to be sent.
+ * @return 0 on success, a negative error code on failure.
+ */
+int thingsboard_iot_send_data(const struct thingsboard_iot_msg *p_tx_data);
 
 #ifdef __cplusplus
 }
