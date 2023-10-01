@@ -2,7 +2,12 @@
  * @brief Handles all the coap related operations including sending a p_message and receiving the response.
  *
  * @file coap_handler.c
- *
+ * 
+ * @todo Response handler is not implemeted, here is three different examples for response handling,
+ * 
+ *  https://github.com/nrfconnect/sdk-nrf/blob/4f612c9527bfad994eff14b63608f227d16c3581/samples/openthread/coap_client/src/coap_client_utils.c
+ *  https://github.com/nrfconnect/sdk-nrf/blob/4f612c9527bfad994eff14b63608f227d16c3581/subsys/net/lib/coap_utils/coap_utils.c
+ *  https://github.com/nrfconnect/sdk-zephyr/tree/a47925f081693cfef963af4f29b2f9f0ccc80768/samples/net/sockets/coap_client
  */
 
 /***********************************************************************************************************************

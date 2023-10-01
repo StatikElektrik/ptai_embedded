@@ -41,38 +41,44 @@ int cloud_codec_encode_cloud_location(
 
 	cJSON *root_obj = cJSON_CreateObject();
 
-	if (root_obj == NULL) {
+	if (root_obj == NULL)
+	{
 		return -ENOMEM;
 	}
 
-	if (!cloud_location->neighbor_cells_valid) {
+	if (!cloud_location->neighbor_cells_valid)
+	{
 		err = -ENODATA;
 		goto exit;
 	}
 
 	err = json_common_neighbor_cells_data_add(root_obj, &cloud_location->neighbor_cells,
-						  JSON_COMMON_ADD_DATA_TO_OBJECT);
-	if (err) {
+											  JSON_COMMON_ADD_DATA_TO_OBJECT);
+	if (err)
+	{
 		goto exit;
 	}
 
 #if defined(CONFIG_LOCATION_METHOD_WIFI)
 	err = json_common_wifi_ap_data_add(root_obj, &cloud_location->wifi_access_points,
-					   JSON_COMMON_ADD_DATA_TO_OBJECT);
-	if (err) {
+									   JSON_COMMON_ADD_DATA_TO_OBJECT);
+	if (err)
+	{
 		goto exit;
 	}
 #endif
 
 	buffer = cJSON_PrintUnformatted(root_obj);
-	if (buffer == NULL) {
+	if (buffer == NULL)
+	{
 		LOG_ERR("Failed to allocate memory for JSON string");
 
 		err = -ENOMEM;
 		goto exit;
 	}
 
-	if (IS_ENABLED(CONFIG_CLOUD_CODEC_LOG_LEVEL_DBG)) {
+	if (IS_ENABLED(CONFIG_CLOUD_CODEC_LOG_LEVEL_DBG))
+	{
 		json_print_obj("Encoded message:\n", root_obj);
 	}
 
@@ -85,7 +91,7 @@ exit:
 }
 
 int cloud_codec_encode_agps_request(struct cloud_codec_data *output,
-				    struct cloud_data_agps_request *agps_request)
+									struct cloud_data_agps_request *agps_request)
 {
 	int err;
 	char *buffer;
@@ -95,25 +101,29 @@ int cloud_codec_encode_agps_request(struct cloud_codec_data *output,
 
 	cJSON *root_obj = cJSON_CreateObject();
 
-	if (root_obj == NULL) {
+	if (root_obj == NULL)
+	{
 		return -ENOMEM;
 	}
 
 	err = json_common_agps_request_data_add(root_obj, agps_request,
-						JSON_COMMON_ADD_DATA_TO_OBJECT);
-	if (err) {
+											JSON_COMMON_ADD_DATA_TO_OBJECT);
+	if (err)
+	{
 		goto exit;
 	}
 
 	buffer = cJSON_PrintUnformatted(root_obj);
-	if (buffer == NULL) {
+	if (buffer == NULL)
+	{
 		LOG_ERR("Failed to allocate memory for JSON string");
 
 		err = -ENOMEM;
 		goto exit;
 	}
 
-	if (IS_ENABLED(CONFIG_CLOUD_CODEC_LOG_LEVEL_DBG)) {
+	if (IS_ENABLED(CONFIG_CLOUD_CODEC_LOG_LEVEL_DBG))
+	{
 		json_print_obj("Encoded message:\n", root_obj);
 	}
 
@@ -126,7 +136,7 @@ exit:
 }
 
 int cloud_codec_encode_pgps_request(struct cloud_codec_data *output,
-				    struct cloud_data_pgps_request *pgps_request)
+									struct cloud_data_pgps_request *pgps_request)
 {
 	int err;
 	char *buffer;
@@ -136,24 +146,28 @@ int cloud_codec_encode_pgps_request(struct cloud_codec_data *output,
 
 	cJSON *root_obj = cJSON_CreateObject();
 
-	if (root_obj == NULL) {
+	if (root_obj == NULL)
+	{
 		return -ENOMEM;
 	}
 
 	err = json_common_pgps_request_data_add(root_obj, pgps_request);
-	if (err) {
+	if (err)
+	{
 		goto exit;
 	}
 
 	buffer = cJSON_PrintUnformatted(root_obj);
-	if (buffer == NULL) {
+	if (buffer == NULL)
+	{
 		LOG_ERR("Failed to allocate memory for JSON string");
 
 		err = -ENOMEM;
 		goto exit;
 	}
 
-	if (IS_ENABLED(CONFIG_CLOUD_CODEC_LOG_LEVEL_DBG)) {
+	if (IS_ENABLED(CONFIG_CLOUD_CODEC_LOG_LEVEL_DBG))
+	{
 		json_print_obj("Encoded message:\n", root_obj);
 	}
 
@@ -166,45 +180,52 @@ exit:
 }
 
 int cloud_codec_decode_config(const char *input, size_t input_len,
-			      struct cloud_data_cfg *cfg)
+							  struct cloud_data_cfg *cfg)
 {
 	int err = 0;
 	cJSON *root_obj = NULL;
 	cJSON *group_obj = NULL;
 	cJSON *subgroup_obj = NULL;
 
-	if (input == NULL) {
+	if (input == NULL)
+	{
 		return -EINVAL;
 	}
 
 	root_obj = cJSON_ParseWithLength(input, input_len);
-	if (root_obj == NULL) {
+	if (root_obj == NULL)
+	{
 		return -ENOENT;
 	}
 
 	/* Verify that the incoming JSON string is an object. */
-	if (!cJSON_IsObject(root_obj)) {
+	if (!cJSON_IsObject(root_obj))
+	{
 		return -ENOENT;
 	}
 
-	if (IS_ENABLED(CONFIG_CLOUD_CODEC_LOG_LEVEL_DBG)) {
+	if (IS_ENABLED(CONFIG_CLOUD_CODEC_LOG_LEVEL_DBG))
+	{
 		json_print_obj("Decoded message:\n", root_obj);
 	}
 
 	group_obj = json_object_decode(root_obj, OBJECT_CONFIG);
-	if (group_obj != NULL) {
+	if (group_obj != NULL)
+	{
 		subgroup_obj = group_obj;
 		goto get_data;
 	}
 
 	group_obj = json_object_decode(root_obj, OBJECT_DESIRED);
-	if (group_obj == NULL) {
+	if (group_obj == NULL)
+	{
 		err = -ENODATA;
 		goto exit;
 	}
 
 	subgroup_obj = json_object_decode(group_obj, OBJECT_CONFIG);
-	if (subgroup_obj == NULL) {
+	if (subgroup_obj == NULL)
+	{
 		err = -ENODATA;
 		goto exit;
 	}
@@ -219,33 +240,37 @@ exit:
 }
 
 int cloud_codec_encode_config(struct cloud_codec_data *output,
-			      struct cloud_data_cfg *data)
+							  struct cloud_data_cfg *data)
 {
 	int err;
 	char *buffer;
 
 	cJSON *root_obj = cJSON_CreateObject();
 
-	if (root_obj == NULL) {
+	if (root_obj == NULL)
+	{
 		cJSON_Delete(root_obj);
 		return -ENOMEM;
 	}
 
 	err = json_common_config_add(root_obj, data, DATA_CONFIG);
 
-	if (err) {
+	if (err)
+	{
 		goto exit;
 	}
 
 	buffer = cJSON_PrintUnformatted(root_obj);
-	if (buffer == NULL) {
+	if (buffer == NULL)
+	{
 		LOG_ERR("Failed to allocate memory for JSON string");
 
 		err = -ENOMEM;
 		goto exit;
 	}
 
-	if (IS_ENABLED(CONFIG_CLOUD_CODEC_LOG_LEVEL_DBG)) {
+	if (IS_ENABLED(CONFIG_CLOUD_CODEC_LOG_LEVEL_DBG))
+	{
 		json_print_obj("Encoded message:\n", root_obj);
 	}
 
@@ -258,13 +283,13 @@ exit:
 }
 
 int cloud_codec_encode_data(struct cloud_codec_data *output,
-			    struct cloud_data_gnss *gnss_buf,
-			    struct cloud_data_sensors *sensor_buf,
-			    struct cloud_data_modem_static *modem_stat_buf,
-			    struct cloud_data_modem_dynamic *modem_dyn_buf,
-			    struct cloud_data_ui *ui_buf,
-			    struct cloud_data_impact *impact_buf,
-			    struct cloud_data_battery *bat_buf)
+							struct cloud_data_gnss *gnss_buf,
+							struct cloud_data_sensors *sensor_buf,
+							struct cloud_data_modem_static *modem_stat_buf,
+							struct cloud_data_modem_dynamic *modem_dyn_buf,
+							struct cloud_data_ui *ui_buf,
+							struct cloud_data_impact *impact_buf,
+							struct cloud_data_battery *bat_buf)
 {
 	int err;
 	char *buffer;
@@ -272,86 +297,111 @@ int cloud_codec_encode_data(struct cloud_codec_data *output,
 
 	cJSON *root_obj = cJSON_CreateObject();
 
-	if (root_obj == NULL) {
+	if (root_obj == NULL)
+	{
 		cJSON_Delete(root_obj);
 		return -ENOMEM;
 	}
 
 	err = json_common_ui_data_add(root_obj, ui_buf,
-				      JSON_COMMON_ADD_DATA_TO_OBJECT,
-				      DATA_BUTTON,
-				      NULL);
-	if (err == 0) {
+								  JSON_COMMON_ADD_DATA_TO_OBJECT,
+								  DATA_BUTTON,
+								  NULL);
+	if (err == 0)
+	{
 		object_added = true;
-	} else if (err != -ENODATA) {
+	}
+	else if (err != -ENODATA)
+	{
 		goto exit;
 	}
 
 	err = json_common_impact_data_add(root_obj, impact_buf,
-					  JSON_COMMON_ADD_DATA_TO_OBJECT,
-					  DATA_IMPACT,
-					  NULL);
-	if (err == 0) {
+									  JSON_COMMON_ADD_DATA_TO_OBJECT,
+									  DATA_IMPACT,
+									  NULL);
+	if (err == 0)
+	{
 		object_added = true;
-	} else if (err != -ENODATA) {
+	}
+	else if (err != -ENODATA)
+	{
 		goto exit;
 	}
 
 	err = json_common_modem_static_data_add(root_obj, modem_stat_buf,
-						JSON_COMMON_ADD_DATA_TO_OBJECT,
-						DATA_MODEM_STATIC,
-						NULL);
-	if (err == 0) {
+											JSON_COMMON_ADD_DATA_TO_OBJECT,
+											DATA_MODEM_STATIC,
+											NULL);
+	if (err == 0)
+	{
 		object_added = true;
-	} else if (err != -ENODATA) {
+	}
+	else if (err != -ENODATA)
+	{
 		goto exit;
 	}
 
 	err = json_common_modem_dynamic_data_add(root_obj, modem_dyn_buf,
-						 JSON_COMMON_ADD_DATA_TO_OBJECT,
-						 DATA_MODEM_DYNAMIC,
-						 NULL);
-	if (err == 0) {
+											 JSON_COMMON_ADD_DATA_TO_OBJECT,
+											 DATA_MODEM_DYNAMIC,
+											 NULL);
+	if (err == 0)
+	{
 		object_added = true;
-	} else if (err != -ENODATA) {
+	}
+	else if (err != -ENODATA)
+	{
 		goto exit;
 	}
 
 	err = json_common_gnss_data_add(root_obj, gnss_buf,
-				       JSON_COMMON_ADD_DATA_TO_OBJECT,
-				       DATA_GNSS,
-				       NULL);
-	if (err == 0) {
+									JSON_COMMON_ADD_DATA_TO_OBJECT,
+									DATA_GNSS,
+									NULL);
+	if (err == 0)
+	{
 		object_added = true;
-	} else if (err != -ENODATA) {
+	}
+	else if (err != -ENODATA)
+	{
 		goto exit;
 	}
 
 	err = json_common_sensor_data_add(root_obj, sensor_buf,
-					  JSON_COMMON_ADD_DATA_TO_OBJECT,
-					  DATA_ENVIRONMENTALS,
-					  NULL);
-	if (err == 0) {
+									  JSON_COMMON_ADD_DATA_TO_OBJECT,
+									  DATA_ENVIRONMENTALS,
+									  NULL);
+	if (err == 0)
+	{
 		object_added = true;
-	} else if (err != -ENODATA) {
+	}
+	else if (err != -ENODATA)
+	{
 		goto exit;
 	}
 
 	err = json_common_battery_data_add(root_obj, bat_buf,
-					   JSON_COMMON_ADD_DATA_TO_OBJECT,
-					   DATA_BATTERY,
-					   NULL);
-	if (err == 0) {
+									   JSON_COMMON_ADD_DATA_TO_OBJECT,
+									   DATA_BATTERY,
+									   NULL);
+	if (err == 0)
+	{
 		object_added = true;
-	} else if (err != -ENODATA) {
+	}
+	else if (err != -ENODATA)
+	{
 		goto exit;
 	}
 
-	if (!object_added) {
+	if (!object_added)
+	{
 		err = -ENODATA;
 		LOG_DBG("No data to encode, JSON string empty...");
 		goto exit;
-	} else {
+	}
+	else
+	{
 		/* At this point err can be either 0 or -ENODATA. Explicitly set err to 0 if
 		 * objects has been added to the rootj object.
 		 */
@@ -359,14 +409,16 @@ int cloud_codec_encode_data(struct cloud_codec_data *output,
 	}
 
 	buffer = cJSON_PrintUnformatted(root_obj);
-	if (buffer == NULL) {
+	if (buffer == NULL)
+	{
 		LOG_ERR("Failed to allocate memory for JSON string");
 
 		err = -ENOMEM;
 		goto exit;
 	}
 
-	if (IS_ENABLED(CONFIG_CLOUD_CODEC_LOG_LEVEL_DBG)) {
+	if (IS_ENABLED(CONFIG_CLOUD_CODEC_LOG_LEVEL_DBG))
+	{
 		json_print_obj("Encoded message:\n", root_obj);
 	}
 
@@ -379,35 +431,39 @@ exit:
 }
 
 int cloud_codec_encode_ui_data(struct cloud_codec_data *output,
-			       struct cloud_data_ui *ui_buf)
+							   struct cloud_data_ui *ui_buf)
 {
 	int err;
 	char *buffer;
 
 	cJSON *root_obj = cJSON_CreateObject();
 
-	if (root_obj == NULL) {
+	if (root_obj == NULL)
+	{
 		cJSON_Delete(root_obj);
 		return -ENOMEM;
 	}
 
 	err = json_common_ui_data_add(root_obj, ui_buf,
-				      JSON_COMMON_ADD_DATA_TO_OBJECT,
-				      DATA_BUTTON,
-				      NULL);
-	if (err) {
+								  JSON_COMMON_ADD_DATA_TO_OBJECT,
+								  DATA_BUTTON,
+								  NULL);
+	if (err)
+	{
 		goto exit;
 	}
 
 	buffer = cJSON_PrintUnformatted(root_obj);
-	if (buffer == NULL) {
+	if (buffer == NULL)
+	{
 		LOG_ERR("Failed to allocate memory for JSON string");
 
 		err = -ENOMEM;
 		goto exit;
 	}
 
-	if (IS_ENABLED(CONFIG_CLOUD_CODEC_LOG_LEVEL_DBG)) {
+	if (IS_ENABLED(CONFIG_CLOUD_CODEC_LOG_LEVEL_DBG))
+	{
 		json_print_obj("Encoded message:\n", root_obj);
 	}
 
@@ -420,36 +476,188 @@ exit:
 }
 
 int cloud_codec_encode_impact_data(struct cloud_codec_data *output,
-				   struct cloud_data_impact *impact_buf)
+								   struct cloud_data_impact *impact_buf)
 {
 	int err;
 	char *buffer;
 
 	cJSON *root_obj = cJSON_CreateObject();
 
-	if (root_obj == NULL) {
+	if (root_obj == NULL)
+	{
 		cJSON_Delete(root_obj);
 		return -ENOMEM;
 	}
 
 	err = json_common_impact_data_add(root_obj, impact_buf,
-					  JSON_COMMON_ADD_DATA_TO_OBJECT,
-					  DATA_IMPACT,
-					  NULL);
-	if (err) {
+									  JSON_COMMON_ADD_DATA_TO_OBJECT,
+									  DATA_IMPACT,
+									  NULL);
+	if (err)
+	{
 		goto exit;
 	}
 
 	buffer = cJSON_PrintUnformatted(root_obj);
-	if (buffer == NULL) {
+	if (buffer == NULL)
+	{
 		LOG_ERR("Failed to allocate memory for JSON string");
 
 		err = -ENOMEM;
 		goto exit;
 	}
 
-	if (IS_ENABLED(CONFIG_CLOUD_CODEC_LOG_LEVEL_DBG)) {
+	if (IS_ENABLED(CONFIG_CLOUD_CODEC_LOG_LEVEL_DBG))
+	{
 		json_print_obj("Encoded message:\n", root_obj);
+	}
+
+	output->buf = buffer;
+	output->len = strlen(buffer);
+
+exit:
+	cJSON_Delete(root_obj);
+	return err;
+}
+
+int cloud_codec_encode_batch_data(struct cloud_codec_data *output,
+								  struct cloud_data_gnss *gnss_buf,
+								  struct cloud_data_sensors *sensor_buf,
+								  struct cloud_data_modem_static *modem_stat_buf,
+								  struct cloud_data_modem_dynamic *modem_dyn_buf,
+								  struct cloud_data_ui *ui_buf,
+								  struct cloud_data_impact *impact_buf,
+								  struct cloud_data_battery *bat_buf,
+								  size_t gnss_buf_count,
+								  size_t sensor_buf_count,
+								  size_t modem_stat_buf_count,
+								  size_t modem_dyn_buf_count,
+								  size_t ui_buf_count,
+								  size_t impact_buf_count,
+								  size_t bat_buf_count)
+{
+	int err;
+	char *buffer;
+	bool object_added = false;
+
+	cJSON *root_obj = cJSON_CreateObject();
+
+	if (root_obj == NULL)
+	{
+		cJSON_Delete(root_obj);
+		return -ENOMEM;
+	}
+
+	err = json_common_batch_data_add(root_obj, JSON_COMMON_MODEM_STATIC,
+									 modem_stat_buf, modem_stat_buf_count,
+									 DATA_MODEM_STATIC);
+	if (err == 0)
+	{
+		object_added = true;
+	}
+	else if (err != -ENODATA)
+	{
+		goto exit;
+	}
+
+	err = json_common_batch_data_add(root_obj, JSON_COMMON_MODEM_DYNAMIC,
+									 modem_dyn_buf, modem_dyn_buf_count,
+									 DATA_MODEM_DYNAMIC);
+	if (err == 0)
+	{
+		object_added = true;
+	}
+	else if (err != -ENODATA)
+	{
+		goto exit;
+	}
+
+	err = json_common_batch_data_add(root_obj, JSON_COMMON_GNSS,
+									 gnss_buf, gnss_buf_count,
+									 DATA_GNSS);
+	if (err == 0)
+	{
+		object_added = true;
+	}
+	else if (err != -ENODATA)
+	{
+		goto exit;
+	}
+
+	err = json_common_batch_data_add(root_obj, JSON_COMMON_SENSOR,
+									 sensor_buf, sensor_buf_count,
+									 DATA_ENVIRONMENTALS);
+	if (err == 0)
+	{
+		object_added = true;
+	}
+	else if (err != -ENODATA)
+	{
+		goto exit;
+	}
+
+	err = json_common_batch_data_add(root_obj, JSON_COMMON_UI,
+									 ui_buf, ui_buf_count,
+									 DATA_BUTTON);
+	if (err == 0)
+	{
+		object_added = true;
+	}
+	else if (err != -ENODATA)
+	{
+		goto exit;
+	}
+
+	err = json_common_batch_data_add(root_obj, JSON_COMMON_IMPACT,
+									 impact_buf, impact_buf_count,
+									 DATA_IMPACT);
+	if (err == 0)
+	{
+		object_added = true;
+	}
+	else if (err != -ENODATA)
+	{
+		goto exit;
+	}
+
+	err = json_common_batch_data_add(root_obj, JSON_COMMON_BATTERY,
+									 bat_buf, bat_buf_count,
+									 DATA_BATTERY);
+	if (err == 0)
+	{
+		object_added = true;
+	}
+	else if (err != -ENODATA)
+	{
+		goto exit;
+	}
+
+	if (!object_added)
+	{
+		err = -ENODATA;
+		LOG_DBG("No data to encode, JSON string empty...");
+		goto exit;
+	}
+	else
+	{
+		/* At this point err can be either 0 or -ENODATA. Explicitly set err to 0 if
+		 * objects has been added to the rootj object.
+		 */
+		err = 0;
+	}
+
+	buffer = cJSON_PrintUnformatted(root_obj);
+	if (buffer == NULL)
+	{
+		LOG_ERR("Failed to allocate memory for JSON string");
+
+		err = -ENOMEM;
+		goto exit;
+	}
+
+	if (IS_ENABLED(CONFIG_CLOUD_CODEC_LOG_LEVEL_DBG))
+	{
+		json_print_obj("Encoded batch message:\n", root_obj);
 	}
 
 	output->buf = buffer;
@@ -461,159 +669,45 @@ exit:
 }
 
 int cloud_codec_encode_device_provision_request_data(struct cloud_codec_data *output,
-			       struct cloud_data_device_provision_request *dev_provision_buf)
+													 struct cloud_data_device_provision_request *dev_provision_buf)
 {
-	int err;
-	char *buffer;
-
 	cJSON *root_obj = cJSON_CreateObject();
-
-	if (root_obj == NULL) {
+	if (root_obj == NULL)
+	{
 		cJSON_Delete(root_obj);
 		return -ENOMEM;
 	}
 
-	// err = json_common_ui_data_add(root_obj, dev_provision_buf,
-	// 			      JSON_COMMON_ADD_DATA_TO_OBJECT,
-	// 			      DATA_DEVICE_PROVISION_REQUEST,
-	// 			      NULL);
-	err = 0;
-	if (err) {
+	int err = json_add_str(root_obj, DATA_PROVISION_REQUEST_DEVICE_NAME, dev_provision_buf->device_name);
+	if (err)
+	{
 		goto exit;
 	}
 
-	buffer = cJSON_PrintUnformatted(root_obj);
-	if (buffer == NULL) {
+	err = json_add_str(root_obj, DATA_PROVISION_REQUEST_DEVICE_KEY, dev_provision_buf->device_provision_key);
+	if (err)
+	{
+		goto exit;
+	}
+
+	err = json_add_str(root_obj, DATA_PROVISION_REQUEST_DEVICE_SECRET, dev_provision_buf->device_provision_secret);
+	if (err)
+	{
+		goto exit;
+	}
+
+	char *buffer = cJSON_PrintUnformatted(root_obj);
+	if (buffer == NULL)
+	{
 		LOG_ERR("Failed to allocate memory for JSON string");
 
 		err = -ENOMEM;
 		goto exit;
 	}
 
-	if (IS_ENABLED(CONFIG_CLOUD_CODEC_LOG_LEVEL_DBG)) {
+	if (IS_ENABLED(CONFIG_CLOUD_CODEC_LOG_LEVEL_DBG))
+	{
 		json_print_obj("Encoded message:\n", root_obj);
-	}
-
-	output->buf = buffer;
-	output->len = strlen(buffer);
-
-exit:
-	cJSON_Delete(root_obj);
-	return err;
-}
-
-
-int cloud_codec_encode_batch_data(struct cloud_codec_data *output,
-				  struct cloud_data_gnss *gnss_buf,
-				  struct cloud_data_sensors *sensor_buf,
-				  struct cloud_data_modem_static *modem_stat_buf,
-				  struct cloud_data_modem_dynamic *modem_dyn_buf,
-				  struct cloud_data_ui *ui_buf,
-				  struct cloud_data_impact *impact_buf,
-				  struct cloud_data_battery *bat_buf,
-				  size_t gnss_buf_count,
-				  size_t sensor_buf_count,
-				  size_t modem_stat_buf_count,
-				  size_t modem_dyn_buf_count,
-				  size_t ui_buf_count,
-				  size_t impact_buf_count,
-				  size_t bat_buf_count)
-{
-	int err;
-	char *buffer;
-	bool object_added = false;
-
-	cJSON *root_obj = cJSON_CreateObject();
-
-	if (root_obj == NULL) {
-		cJSON_Delete(root_obj);
-		return -ENOMEM;
-	}
-
-	err = json_common_batch_data_add(root_obj, JSON_COMMON_MODEM_STATIC,
-					 modem_stat_buf, modem_stat_buf_count,
-					 DATA_MODEM_STATIC);
-	if (err == 0) {
-		object_added = true;
-	} else if (err != -ENODATA) {
-		goto exit;
-	}
-
-	err = json_common_batch_data_add(root_obj, JSON_COMMON_MODEM_DYNAMIC,
-					 modem_dyn_buf, modem_dyn_buf_count,
-					 DATA_MODEM_DYNAMIC);
-	if (err == 0) {
-		object_added = true;
-	} else if (err != -ENODATA) {
-		goto exit;
-	}
-
-	err = json_common_batch_data_add(root_obj, JSON_COMMON_GNSS,
-					 gnss_buf, gnss_buf_count,
-					 DATA_GNSS);
-	if (err == 0) {
-		object_added = true;
-	} else if (err != -ENODATA) {
-		goto exit;
-	}
-
-	err = json_common_batch_data_add(root_obj, JSON_COMMON_SENSOR,
-					 sensor_buf, sensor_buf_count,
-					 DATA_ENVIRONMENTALS);
-	if (err == 0) {
-		object_added = true;
-	} else if (err != -ENODATA) {
-		goto exit;
-	}
-
-	err = json_common_batch_data_add(root_obj, JSON_COMMON_UI,
-					 ui_buf, ui_buf_count,
-					 DATA_BUTTON);
-	if (err == 0) {
-		object_added = true;
-	} else if (err != -ENODATA) {
-		goto exit;
-	}
-
-	err = json_common_batch_data_add(root_obj, JSON_COMMON_IMPACT,
-					 impact_buf, impact_buf_count,
-					 DATA_IMPACT);
-	if (err == 0) {
-		object_added = true;
-	} else if (err != -ENODATA) {
-		goto exit;
-	}
-
-	err = json_common_batch_data_add(root_obj, JSON_COMMON_BATTERY,
-					 bat_buf, bat_buf_count,
-					 DATA_BATTERY);
-	if (err == 0) {
-		object_added = true;
-	} else if (err != -ENODATA) {
-		goto exit;
-	}
-
-	if (!object_added) {
-		err = -ENODATA;
-		LOG_DBG("No data to encode, JSON string empty...");
-		goto exit;
-	} else {
-		/* At this point err can be either 0 or -ENODATA. Explicitly set err to 0 if
-		 * objects has been added to the rootj object.
-		 */
-		err = 0;
-	}
-
-	buffer = cJSON_PrintUnformatted(root_obj);
-	if (buffer == NULL) {
-		LOG_ERR("Failed to allocate memory for JSON string");
-
-		err = -ENOMEM;
-		goto exit;
-	}
-
-	if (IS_ENABLED(CONFIG_CLOUD_CODEC_LOG_LEVEL_DBG)) {
-		json_print_obj("Encoded batch message:\n", root_obj);
 	}
 
 	output->buf = buffer;

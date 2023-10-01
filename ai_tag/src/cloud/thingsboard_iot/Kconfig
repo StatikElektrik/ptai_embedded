@@ -14,28 +14,27 @@ menuconfig $(module)
 
 if THINGSBOARD_IOT
 
-config THINGSBOARD_IOT_DEVICE_ID
-	string "Device ID"
-	help
-	  Device ID to be used when connecting to IoT hub and optionally DPS.
-	  Providing a device ID can also be done at run-time using the appropriate APIs.
-
 config THINGSBOARD_IOT_HOSTNAME
 	string "Thingsboard IoT hostname"
 	help
 	  Hostname to Thingsboard IoT instance.
+
+config THINGSBOARD_IOT_DEVICE_ID_MAX_LEN
+	int "Maximum length of device id"
+	default 30
+	help
+	  Maximum length for device provision secret
 
 config THINGSBOARD_IOT_DEVICE_TOKEN
 	string "Thingsboard IoT device token"
 	help
 	  Thingsboard IoT device token.
 
-config THINGSBOARD_IOT_DEVICE_TOKEN_SIZE
-	int "Thingsboard IoT device token size"
+config THINGSBOARD_IOT_DEVICE_TOKEN_MAX_LEN
+	int "Maximum length of device token"
 	default 30
 	help
-	  Define this size if you are not defining the token itself
-	  and the default size is not enough for a token. 
+	   Maximum length for device token.
 
 config THINGSBOARD_IOT_DEVICE_PROVISION_KEY
 	string "Thingsboard IoT provision key"
@@ -43,14 +42,26 @@ config THINGSBOARD_IOT_DEVICE_PROVISION_KEY
 	  Thingsboard IoT provision secret. Define only if
 	  device token is not defined.
 
+config THINGSBOARD_IOT_DEVICE_PROVISION_KEY_MAX_LEN
+	int "Maximum length of device provision key"
+	default 30
+	help
+	   Maximum size for device provision key
+
 config THINGSBOARD_IOT_DEVICE_PROVISION_SECRET
 	string "Thingsboard IoT provision secret"
 	help
 	  Thingsboard IoT provision secret. Define only if
 	  device token is not defined.
 
-config THINGSBOARD_IOT_COAP_URI_PATH_LEN
-	int "Lenght of the uri path of the coap resource"
+config THINGSBOARD_IOT_DEVICE_PROVISION_SECRET_MAX_LEN
+	int "Maximum length of device provision secret"
+	default 30
+	help	
+	   Maximum length for device provision secret
+
+config THINGSBOARD_IOT_COAP_URI_PATH_MAX_LEN
+	int "Maximum length of coap uri path"
 	default 50
 	help
 	  Here is an example uri path for the coap,

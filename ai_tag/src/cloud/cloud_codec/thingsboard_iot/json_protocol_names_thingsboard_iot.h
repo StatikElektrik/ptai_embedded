@@ -94,7 +94,9 @@
 #define DATA_PGPS_REQUEST_DAY      "day"
 #define DATA_PGPS_REQUEST_TIME     "time"
 
-#define DATA_DEVICE_PROVISION_REQUEST "dvc_prv"
-
 #define OBJECT_DESIRED "desired"
 #define OBJECT_CONFIG  "cfg"
+
+#define DATA_PROVISION_REQUEST_DEVICE_NAME "deviceName"
+#define DATA_PROVISION_REQUEST_DEVICE_KEY "provisionDeviceKey"
+#define DATA_PROVISION_REQUEST_DEVICE_SECRET "provisionDeviceSecret"
