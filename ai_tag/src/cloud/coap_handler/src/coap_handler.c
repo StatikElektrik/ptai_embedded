@@ -2,9 +2,9 @@
  * @brief Handles all the coap related operations including sending a p_message and receiving the response.
  *
  * @file coap_handler.c
- * 
+ *
  * @todo Response handler is not implemeted, here is three different examples for response handling,
- * 
+ *
  *  https://github.com/nrfconnect/sdk-nrf/blob/4f612c9527bfad994eff14b63608f227d16c3581/samples/openthread/coap_client/src/coap_client_utils.c
  *  https://github.com/nrfconnect/sdk-nrf/blob/4f612c9527bfad994eff14b63608f227d16c3581/subsys/net/lib/coap_utils/coap_utils.c
  *  https://github.com/nrfconnect/sdk-zephyr/tree/a47925f081693cfef963af4f29b2f9f0ccc80768/samples/net/sockets/coap_client
@@ -38,10 +38,16 @@ LOG_MODULE_REGISTER(MODULE, CONFIG_COAP_HANDLER_LOG_LEVEL);
 /***********************************************************************************************************************
  * Typedef Definitions
  **********************************************************************************************************************/
-enum g_dns_state
+enum dns_state
 {
-    RESOLVED,
-    NOT_RESOLVED
+    DNS_RESOLVED,
+    DNS_NOT_RESOLVED
+};
+
+enum connection_state
+{
+    STATE_DISCONNECTED,
+    STATE_CONNECTED
 };
 /***********************************************************************************************************************
  * Private Global Variables
@@ -51,7 +57,8 @@ static uint16_t g_next_token;
 static int g_sock;
 static struct sockaddr_storage g_server;
 
-static enum g_dns_state g_dns_state = NOT_RESOLVED;
+static enum dns_state g_dns_state = DNS_NOT_RESOLVED;
+static enum connection_state g_connection_state = STATE_DISCONNECTED;
 
 /***********************************************************************************************************************
  * Private Function Definitions
@@ -65,14 +72,33 @@ static enum g_dns_state g_dns_state = NOT_RESOLVED;
  * @param state DNS state
  * @return const char* name of the state as a string.
  */
-static const char *coap_handler_dns_state_name_get(enum g_dns_state state)
+static const char *coap_handler_dns_state_name_get(enum dns_state state)
 {
     switch (state)
     {
-    case RESOLVED:
-        return "RESOLVED";
-    case NOT_RESOLVED:
-        return "NOT_RESOLVED";
+    case DNS_RESOLVED:
+        return "DNS_RESOLVED";
+    case DNS_NOT_RESOLVED:
+        return "DNS_NOT_RESOLVED";
+    default:
+        return "STATE_UNKNOWN";
+    }
+}
+
+/**
+ * @brief Get the name associated with a connection state.
+ *
+ * @param state The connection state.
+ * @return The name of the state as a string.
+ */
+static const char *connection_state_name_get(enum connection_state state)
+{
+    switch (state)
+    {
+    case STATE_DISCONNECTED:
+        return "STATE_DISCONNECTED";
+    case STATE_CONNECTED:
+        return "STATE_CONNECTED";
     default:
         return "STATE_UNKNOWN";
     }
@@ -83,7 +109,7 @@ static const char *coap_handler_dns_state_name_get(enum g_dns_state state)
  *
  * @param new_state New DNS state.
  */
-static void coap_handler_dns_state_set(enum g_dns_state new_state)
+static void coap_handler_dns_state_set(enum dns_state new_state)
 {
     LOG_DBG("DNS state transition: %s --> %s",
             coap_handler_dns_state_name_get(g_dns_state),
@@ -99,7 +125,55 @@ static void coap_handler_dns_state_set(enum g_dns_state new_state)
  */
 static bool coap_handler_is_dns_resolved()
 {
-    return (g_dns_state == RESOLVED) ? true : false;
+    return (g_dns_state == DNS_RESOLVED) ? true : false;
+}
+
+/**
+ * @brief Set the new connection state and perform state transition checks.
+ *
+ * @param new_state The new connection state.
+ */
+static void coap_handler_connection_state_set(enum connection_state new_state)
+{
+    bool notify_error = false;
+
+    if (g_connection_state == new_state)
+    {
+        LOG_DBG("Skipping transition to the same state (%s)",
+                connection_state_name_get(g_connection_state));
+        return;
+    }
+
+    switch (g_connection_state)
+    {
+
+    case STATE_DISCONNECTED:
+        break;
+    case STATE_CONNECTED:
+        break;
+    default:
+        LOG_ERR("Invalid connection state transition, %s --> %s",
+                connection_state_name_get(g_connection_state),
+                connection_state_name_get(new_state));
+        break;
+    }
+
+    LOG_DBG("Connection state transition: %s --> %s",
+            connection_state_name_get(g_connection_state),
+            connection_state_name_get(new_state));
+
+    g_connection_state = new_state;
+}
+
+/**
+ * @brief Verify the current connection state.
+ *
+ * @param state The connection state to verify.
+ * @return true if the current connection state matches the given state, false otherwise.
+ */
+static bool coap_handler_connection_state_verify(enum connection_state state)
+{
+    return (g_connection_state == state);
 }
 
 /**
@@ -217,7 +291,7 @@ static int coap_handler_resolve_dns_address(const char *p_server_hostname)
 
     freeaddrinfo(result);
 
-    coap_handler_dns_state_set(RESOLVED);
+    coap_handler_dns_state_set(DNS_RESOLVED);
     return 0;
 }
 
@@ -225,8 +299,15 @@ static int coap_handler_resolve_dns_address(const char *p_server_hostname)
  * Public Function Definitions
  **********************************************************************************************************************/
 
-int coap_handler_client_init(const char *p_server_hostname)
+int coap_handler_client_connect(const char *p_server_hostname)
 {
+
+    if (coap_handler_connection_state_verify(STATE_CONNECTED))
+    {
+        LOG_WRN("CoAP socket is already connected.");
+        return -EALREADY;
+    }
+
     int err = coap_handler_resolve_dns_address(p_server_hostname);
     if (err != 0)
     {
@@ -250,10 +331,30 @@ int coap_handler_client_init(const char *p_server_hostname)
     }
 
     LOG_DBG("Successfully connected to server");
+    coap_handler_connection_state_set(STATE_CONNECTED);
 
     // Generate a random token after the socket is connected.
     g_next_token = sys_rand32_get();
 
+    return 0;
+}
+
+int coap_handler_client_disconnect(void)
+{
+    if (!coap_handler_connection_state_verify(STATE_CONNECTED))
+    {
+        LOG_WRN("CoAP socket is already disconnected.");
+        return -ENOTCONN;
+    }
+
+    int err = close(g_sock);
+    if (err)
+    {
+        LOG_ERR("Failed to disconnect CoAP socket, error: %d", err);
+        return err;
+    }
+
+    coap_handler_connection_state_set(STATE_DISCONNECTED);
     return 0;
 }
 

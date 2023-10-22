@@ -420,7 +420,7 @@ int thingsboard_iot_connect(const struct thingsboard_iot_config *p_config)
 
 	thingsboard_iot_notify_event(&evt);
 
-	int err = coap_handler_client_init(CONFIG_THINGSBOARD_IOT_HOSTNAME);
+	int err = coap_handler_client_connect(CONFIG_THINGSBOARD_IOT_HOSTNAME);
 	if (err)
 	{
 		LOG_ERR("Failed to initialize the coap client, error %d", err);
@@ -453,14 +453,13 @@ int thingsboard_iot_disconnect(void)
 
 	thingsboard_iot_connection_state_set(STATE_DISCONNECTING);
 
-	// @todo Disconnection is not implemented. Socket is currently all open.
-	//
-	// err = coap_handler_disconnect();
-	// if (err) {
-	// 	LOG_ERR("Failed to disconnect CoAp, error: %d", err);
-	// 	thingsboard_iot_connection_state_set(STATE_INIT);
-	// 	return err;
-	// }
+	int err = coap_handler_client_disconnect();
+	if (err)
+	{
+		LOG_ERR("Failed to disconnect CoAP, error: %d", err);
+		thingsboard_iot_connection_state_set(STATE_UNINIT);
+		return err;
+	}
 
 	thingsboard_iot_connection_state_set(STATE_DISCONNECTED);
 
