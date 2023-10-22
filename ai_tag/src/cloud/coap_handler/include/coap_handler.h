@@ -37,8 +37,18 @@ extern "C" {
  * @param server_hostname Server host name to connect.
  * @return int 0 if successful else failure.
  */
-int coap_handler_client_init(const char *server_hostname);
+int coap_handler_client_connect(const char *p_server_hostname);
 
+/**
+ * @brief Disconnects the CoAP client socket.
+ *
+ *
+ * @return 0 on success, a negative error code on failure.
+ *   - 0: Socket disconnected successfully.
+ *   - -ENOTCONN: The socket was not connected or is already disconnected.
+ *   - Another error code in case of a failure.
+ */
+int coap_handler_client_disconnect(void);
 
 /**
  * @brief Send a confirmable post request to the given URI path.
