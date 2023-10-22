@@ -323,6 +323,7 @@ static inline int adjust_rsrq(int input)
 	return input;
 }
 
+#if defined(CONFIG_LOCATION_METHOD_CELLULAR) || defined(CONFIG_LOCATION_METHOD_WIFI)
 static void send_cloud_location_update(const struct location_data_cloud *cloud_location_info)
 {
 	struct location_module_event *evt = new_location_module_event();
@@ -376,6 +377,7 @@ static void send_cloud_location_update(const struct location_data_cloud *cloud_l
 
 	APP_EVENT_SUBMIT(evt);
 }
+#endif
 
 /* Non-static so that this can be used in tests to mock location library API. */
 void location_event_handler(const struct location_event_data *event_data)
