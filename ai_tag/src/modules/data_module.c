@@ -37,11 +37,13 @@
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(MODULE, CONFIG_DATA_MODULE_LOG_LEVEL);
 
-#define DEVICE_SETTINGS_KEY			"data_module"
-#define DEVICE_SETTINGS_CONFIG_KEY		"config"
+#define DEVICE_SETTINGS_KEY "data_module"
+#define DEVICE_SETTINGS_CONFIG_KEY "config"
 
-struct data_msg_data {
-	union {
+struct data_msg_data
+{
+	union
+	{
 		struct modem_module_event modem;
 		struct cloud_module_event cloud;
 		struct location_module_event location;
@@ -93,17 +95,16 @@ static K_SEM_DEFINE(config_load_sem, 0, 1);
 
 /* Default device configuration. */
 static struct cloud_data_cfg current_cfg = {
-	.location_timeout	 = CONFIG_DATA_LOCATION_TIMEOUT_SECONDS,
-	.active_mode		 = IS_ENABLED(CONFIG_DATA_DEVICE_MODE_ACTIVE),
-	.active_wait_timeout	 = CONFIG_DATA_ACTIVE_TIMEOUT_SECONDS,
-	.movement_resolution	 = CONFIG_DATA_MOVEMENT_RESOLUTION_SECONDS,
-	.movement_timeout	 = CONFIG_DATA_MOVEMENT_TIMEOUT_SECONDS,
-	.accelerometer_activity_threshold	= CONFIG_DATA_ACCELEROMETER_ACT_THRESHOLD,
-	.accelerometer_inactivity_threshold	= CONFIG_DATA_ACCELEROMETER_INACT_THRESHOLD,
-	.accelerometer_inactivity_timeout	= CONFIG_DATA_ACCELEROMETER_INACT_TIMEOUT_SECONDS,
-	.no_data.gnss		 = !IS_ENABLED(CONFIG_DATA_SAMPLE_GNSS_DEFAULT),
-	.no_data.neighbor_cell	 = !IS_ENABLED(CONFIG_DATA_SAMPLE_NEIGHBOR_CELLS_DEFAULT)
-};
+	.location_timeout = CONFIG_DATA_LOCATION_TIMEOUT_SECONDS,
+	.active_mode = IS_ENABLED(CONFIG_DATA_DEVICE_MODE_ACTIVE),
+	.active_wait_timeout = CONFIG_DATA_ACTIVE_TIMEOUT_SECONDS,
+	.movement_resolution = CONFIG_DATA_MOVEMENT_RESOLUTION_SECONDS,
+	.movement_timeout = CONFIG_DATA_MOVEMENT_TIMEOUT_SECONDS,
+	.accelerometer_activity_threshold = CONFIG_DATA_ACCELEROMETER_ACT_THRESHOLD,
+	.accelerometer_inactivity_threshold = CONFIG_DATA_ACCELEROMETER_INACT_THRESHOLD,
+	.accelerometer_inactivity_timeout = CONFIG_DATA_ACCELEROMETER_INACT_TIMEOUT_SECONDS,
+	.no_data.gnss = !IS_ENABLED(CONFIG_DATA_SAMPLE_GNSS_DEFAULT),
+	.no_data.neighbor_cell = !IS_ENABLED(CONFIG_DATA_SAMPLE_NEIGHBOR_CELLS_DEFAULT)};
 
 static struct k_work_delayable data_send_work;
 
@@ -124,7 +125,8 @@ static int recv_req_data_count;
 static int req_data_count;
 
 /* List of data types that are supported to be sent based on LTE connection evaluation. */
-enum coneval_supported_data_type {
+enum coneval_supported_data_type
+{
 	UNUSED,
 	GENERIC,
 	BATCH,
@@ -141,11 +143,11 @@ bool agps_request_buffered;
 struct nrf_modem_gnss_agps_data_frame agps_request_buffer;
 
 /* Data module message queue. */
-#define DATA_QUEUE_ENTRY_COUNT		10
-#define DATA_QUEUE_BYTE_ALIGNMENT	4
+#define DATA_QUEUE_ENTRY_COUNT 10
+#define DATA_QUEUE_BYTE_ALIGNMENT 4
 
 K_MSGQ_DEFINE(msgq_data, sizeof(struct data_msg_data),
-	      DATA_QUEUE_ENTRY_COUNT, DATA_QUEUE_BYTE_ALIGNMENT);
+			  DATA_QUEUE_ENTRY_COUNT, DATA_QUEUE_BYTE_ALIGNMENT);
 
 static struct module_data self = {
 	.name = "data",
@@ -156,17 +158,18 @@ static struct module_data self = {
 /* Forward declarations */
 static void data_send_work_fn(struct k_work *work);
 static int config_settings_handler(const char *key, size_t len,
-				   settings_read_cb read_cb, void *cb_arg);
+								   settings_read_cb read_cb, void *cb_arg);
 static void new_config_handle(struct cloud_data_cfg *new_config);
 
 /* Static handlers */
 SETTINGS_STATIC_HANDLER_DEFINE(MODULE, DEVICE_SETTINGS_KEY, NULL,
-			       config_settings_handler, NULL, NULL);
+							   config_settings_handler, NULL, NULL);
 
 /* Convenience functions used in internal state handling. */
 static char *state2str(enum state_type new_state)
 {
-	switch (new_state) {
+	switch (new_state)
+	{
 	case STATE_CLOUD_DISCONNECTED:
 		return "STATE_CLOUD_DISCONNECTED";
 	case STATE_CLOUD_CONNECTED:
@@ -180,14 +183,15 @@ static char *state2str(enum state_type new_state)
 
 static void state_set(enum state_type new_state)
 {
-	if (new_state == state) {
+	if (new_state == state)
+	{
 		LOG_DBG("State: %s", state2str(state));
 		return;
 	}
 
 	LOG_DBG("State transition %s --> %s",
-		state2str(state),
-		state2str(new_state));
+			state2str(state),
+			state2str(new_state));
 
 	state = new_state;
 }
@@ -198,67 +202,77 @@ static bool app_event_handler(const struct app_event_header *aeh)
 	struct data_msg_data msg = {0};
 	bool enqueue_msg = false;
 
-	if (is_modem_module_event(aeh)) {
+	if (is_modem_module_event(aeh))
+	{
 		struct modem_module_event *event = cast_modem_module_event(aeh);
 
 		msg.module.modem = *event;
 		enqueue_msg = true;
 	}
 
-	if (is_cloud_module_event(aeh)) {
+	if (is_cloud_module_event(aeh))
+	{
 		struct cloud_module_event *event = cast_cloud_module_event(aeh);
 
 		msg.module.cloud = *event;
 		enqueue_msg = true;
 	}
 
-	if (is_location_module_event(aeh)) {
+	if (is_location_module_event(aeh))
+	{
 		struct location_module_event *event = cast_location_module_event(aeh);
 
 		msg.module.location = *event;
 		enqueue_msg = true;
 	}
 
-	if (is_sensor_module_event(aeh)) {
+	if (is_sensor_module_event(aeh))
+	{
 		struct sensor_module_event *event =
-				cast_sensor_module_event(aeh);
+			cast_sensor_module_event(aeh);
 
 		msg.module.sensor = *event;
 		enqueue_msg = true;
 	}
 
-	if (is_ui_module_event(aeh)) {
+	if (is_ui_module_event(aeh))
+	{
 		struct ui_module_event *event = cast_ui_module_event(aeh);
 
 		msg.module.ui = *event;
 		enqueue_msg = true;
 	}
 
-	if (is_app_module_event(aeh)) {
+	if (is_app_module_event(aeh))
+	{
 		struct app_module_event *event = cast_app_module_event(aeh);
 
 		msg.module.app = *event;
 		enqueue_msg = true;
 	}
 
-	if (is_data_module_event(aeh)) {
+	if (is_data_module_event(aeh))
+	{
 		struct data_module_event *event = cast_data_module_event(aeh);
 
 		msg.module.data = *event;
 		enqueue_msg = true;
 	}
 
-	if (is_util_module_event(aeh)) {
+	if (is_util_module_event(aeh))
+	{
 		struct util_module_event *event = cast_util_module_event(aeh);
 
 		msg.module.util = *event;
 		enqueue_msg = true;
 	}
 
-	if (enqueue_msg) {
+	if (enqueue_msg)
+	{
 		int err = module_enqueue_msg(&self, &msg);
 
-		if (err) {
+		if (err)
+		{
 			LOG_ERR("Message could not be enqueued");
 			SEND_ERROR(data, DATA_EVT_ERROR, err);
 		}
@@ -268,8 +282,8 @@ static bool app_event_handler(const struct app_event_header *aeh)
 }
 
 static bool grant_send(enum coneval_supported_data_type type,
-		       struct lte_lc_conn_eval_params *coneval,
-		       bool override)
+					   struct lte_lc_conn_eval_params *coneval,
+					   bool override)
 {
 #if defined(CONFIG_DATA_GRANT_SEND_ON_CONNECTION_QUALITY)
 	/* List used to keep track of how many times a data type has been denied a send.
@@ -277,12 +291,14 @@ static bool grant_send(enum coneval_supported_data_type type,
 	 */
 	static uint8_t send_denied_count[COUNT];
 
-	if (override) {
+	if (override)
+	{
 		/* The override flag is set, grant send. */
 		return true;
 	}
 
-	if (send_denied_count[type] >= CONFIG_DATA_SEND_ATTEMPTS_COUNT_MAX) {
+	if (send_denied_count[type] >= CONFIG_DATA_SEND_ATTEMPTS_COUNT_MAX)
+	{
 		/* Grant send if a message has been attempted too many times. */
 		LOG_WRN("Too many attempts, granting send");
 		goto grant;
@@ -290,58 +306,84 @@ static bool grant_send(enum coneval_supported_data_type type,
 
 	LOG_DBG("Current LTE energy estimate: %d", coneval->energy_estimate);
 
-	switch (type) {
+	switch (type)
+	{
 	case GENERIC:
 		if (IS_ENABLED(CONFIG_DATA_GENERIC_UPDATES_ENERGY_THRESHOLD_EXCESSIVE) &&
-		    coneval->energy_estimate >= LTE_LC_ENERGY_CONSUMPTION_EXCESSIVE) {
+			coneval->energy_estimate >= LTE_LC_ENERGY_CONSUMPTION_EXCESSIVE)
+		{
 			goto grant;
-		} else if (IS_ENABLED(CONFIG_DATA_GENERIC_UPDATES_ENERGY_THRESHOLD_INCREASED) &&
-		    coneval->energy_estimate >= LTE_LC_ENERGY_CONSUMPTION_INCREASED) {
+		}
+		else if (IS_ENABLED(CONFIG_DATA_GENERIC_UPDATES_ENERGY_THRESHOLD_INCREASED) &&
+				 coneval->energy_estimate >= LTE_LC_ENERGY_CONSUMPTION_INCREASED)
+		{
 			goto grant;
-		} else if (IS_ENABLED(CONFIG_DATA_GENERIC_UPDATES_ENERGY_THRESHOLD_NORMAL) &&
-		    coneval->energy_estimate >= LTE_LC_ENERGY_CONSUMPTION_NORMAL) {
+		}
+		else if (IS_ENABLED(CONFIG_DATA_GENERIC_UPDATES_ENERGY_THRESHOLD_NORMAL) &&
+				 coneval->energy_estimate >= LTE_LC_ENERGY_CONSUMPTION_NORMAL)
+		{
 			goto grant;
-		} else if (IS_ENABLED(CONFIG_DATA_GENERIC_UPDATES_ENERGY_THRESHOLD_REDUCED) &&
-		    coneval->energy_estimate >= LTE_LC_ENERGY_CONSUMPTION_REDUCED) {
+		}
+		else if (IS_ENABLED(CONFIG_DATA_GENERIC_UPDATES_ENERGY_THRESHOLD_REDUCED) &&
+				 coneval->energy_estimate >= LTE_LC_ENERGY_CONSUMPTION_REDUCED)
+		{
 			goto grant;
-		} else if (IS_ENABLED(CONFIG_DATA_GENERIC_UPDATES_ENERGY_THRESHOLD_EFFICIENT) &&
-		    coneval->energy_estimate >= LTE_LC_ENERGY_CONSUMPTION_EFFICIENT) {
+		}
+		else if (IS_ENABLED(CONFIG_DATA_GENERIC_UPDATES_ENERGY_THRESHOLD_EFFICIENT) &&
+				 coneval->energy_estimate >= LTE_LC_ENERGY_CONSUMPTION_EFFICIENT)
+		{
 			goto grant;
 		}
 		break;
 	case NEIGHBOR_CELLS:
 		if (IS_ENABLED(CONFIG_DATA_NEIGHBOR_CELL_UPDATES_ENERGY_THRESHOLD_EXCESSIVE) &&
-		    coneval->energy_estimate >= LTE_LC_ENERGY_CONSUMPTION_EXCESSIVE) {
+			coneval->energy_estimate >= LTE_LC_ENERGY_CONSUMPTION_EXCESSIVE)
+		{
 			goto grant;
-		} else if (IS_ENABLED(CONFIG_DATA_NEIGHBOR_CELL_UPDATES_ENERGY_THRESHOLD_INCREASED)
-			   && coneval->energy_estimate >= LTE_LC_ENERGY_CONSUMPTION_INCREASED) {
+		}
+		else if (IS_ENABLED(CONFIG_DATA_NEIGHBOR_CELL_UPDATES_ENERGY_THRESHOLD_INCREASED) && coneval->energy_estimate >= LTE_LC_ENERGY_CONSUMPTION_INCREASED)
+		{
 			goto grant;
-		} else if (IS_ENABLED(CONFIG_DATA_NEIGHBOR_CELL_UPDATES_ENERGY_THRESHOLD_NORMAL) &&
-		    coneval->energy_estimate >= LTE_LC_ENERGY_CONSUMPTION_NORMAL) {
+		}
+		else if (IS_ENABLED(CONFIG_DATA_NEIGHBOR_CELL_UPDATES_ENERGY_THRESHOLD_NORMAL) &&
+				 coneval->energy_estimate >= LTE_LC_ENERGY_CONSUMPTION_NORMAL)
+		{
 			goto grant;
-		} else if (IS_ENABLED(CONFIG_DATA_NEIGHBOR_CELL_UPDATES_ENERGY_THRESHOLD_REDUCED) &&
-		    coneval->energy_estimate >= LTE_LC_ENERGY_CONSUMPTION_REDUCED) {
+		}
+		else if (IS_ENABLED(CONFIG_DATA_NEIGHBOR_CELL_UPDATES_ENERGY_THRESHOLD_REDUCED) &&
+				 coneval->energy_estimate >= LTE_LC_ENERGY_CONSUMPTION_REDUCED)
+		{
 			goto grant;
-		} else if (IS_ENABLED(CONFIG_DATA_NEIGHBOR_CELL_UPDATES_ENERGY_THRESHOLD_EFFICIENT)
-			   && coneval->energy_estimate >= LTE_LC_ENERGY_CONSUMPTION_EFFICIENT) {
+		}
+		else if (IS_ENABLED(CONFIG_DATA_NEIGHBOR_CELL_UPDATES_ENERGY_THRESHOLD_EFFICIENT) && coneval->energy_estimate >= LTE_LC_ENERGY_CONSUMPTION_EFFICIENT)
+		{
 			goto grant;
 		}
 		break;
 	case BATCH:
 		if (IS_ENABLED(CONFIG_DATA_BATCH_UPDATES_ENERGY_THRESHOLD_EXCESSIVE) &&
-		    coneval->energy_estimate >= LTE_LC_ENERGY_CONSUMPTION_EXCESSIVE) {
+			coneval->energy_estimate >= LTE_LC_ENERGY_CONSUMPTION_EXCESSIVE)
+		{
 			goto grant;
-		} else if (IS_ENABLED(CONFIG_DATA_BATCH_UPDATES_ENERGY_THRESHOLD_INCREASED) &&
-		    coneval->energy_estimate >= LTE_LC_ENERGY_CONSUMPTION_INCREASED) {
+		}
+		else if (IS_ENABLED(CONFIG_DATA_BATCH_UPDATES_ENERGY_THRESHOLD_INCREASED) &&
+				 coneval->energy_estimate >= LTE_LC_ENERGY_CONSUMPTION_INCREASED)
+		{
 			goto grant;
-		} else if (IS_ENABLED(CONFIG_DATA_BATCH_UPDATES_ENERGY_THRESHOLD_NORMAL) &&
-		    coneval->energy_estimate >= LTE_LC_ENERGY_CONSUMPTION_NORMAL) {
+		}
+		else if (IS_ENABLED(CONFIG_DATA_BATCH_UPDATES_ENERGY_THRESHOLD_NORMAL) &&
+				 coneval->energy_estimate >= LTE_LC_ENERGY_CONSUMPTION_NORMAL)
+		{
 			goto grant;
-		} else if (IS_ENABLED(CONFIG_DATA_BATCH_UPDATES_ENERGY_THRESHOLD_REDUCED) &&
-		    coneval->energy_estimate >= LTE_LC_ENERGY_CONSUMPTION_REDUCED) {
+		}
+		else if (IS_ENABLED(CONFIG_DATA_BATCH_UPDATES_ENERGY_THRESHOLD_REDUCED) &&
+				 coneval->energy_estimate >= LTE_LC_ENERGY_CONSUMPTION_REDUCED)
+		{
 			goto grant;
-		} else if (IS_ENABLED(CONFIG_DATA_BATCH_UPDATES_ENERGY_THRESHOLD_EFFICIENT) &&
-		    coneval->energy_estimate >= LTE_LC_ENERGY_CONSUMPTION_EFFICIENT) {
+		}
+		else if (IS_ENABLED(CONFIG_DATA_BATCH_UPDATES_ENERGY_THRESHOLD_EFFICIENT) &&
+				 coneval->energy_estimate >= LTE_LC_ENERGY_CONSUMPTION_EFFICIENT)
+		{
 			goto grant;
 		}
 		break;
@@ -351,28 +393,32 @@ static bool grant_send(enum coneval_supported_data_type type,
 	}
 
 	LOG_DBG("Send NOT granted, type: %d, energy estimate: %d, attempt: %d", type,
-		coneval->energy_estimate, send_denied_count[type]);
+			coneval->energy_estimate, send_denied_count[type]);
 	send_denied_count[type]++;
 	return false;
 
 grant:
 	LOG_DBG("Send granted, type: %d, energy estimate: %d, attempt: %d",
-		type, coneval->energy_estimate, send_denied_count[type]);
+			type, coneval->energy_estimate, send_denied_count[type]);
 	send_denied_count[type] = 0;
 #endif /* CONFIG_DATA_GRANT_SEND_ON_CONNECTION_QUALITY */
 	return true;
 }
 
 static int config_settings_handler(const char *key, size_t len,
-				   settings_read_cb read_cb, void *cb_arg)
+								   settings_read_cb read_cb, void *cb_arg)
 {
 	int err = 0;
 
-	if (strcmp(key, DEVICE_SETTINGS_CONFIG_KEY) == 0) {
+	if (strcmp(key, DEVICE_SETTINGS_CONFIG_KEY) == 0)
+	{
 		err = read_cb(cb_arg, &current_cfg, sizeof(current_cfg));
-		if (err < 0) {
+		if (err < 0)
+		{
 			LOG_ERR("Failed to load configuration, error: %d", err);
-		} else {
+		}
+		else
+		{
 			LOG_DBG("Device configuration loaded from flash");
 			err = 0;
 		}
@@ -384,12 +430,14 @@ static int config_settings_handler(const char *key, size_t len,
 
 static void date_time_event_handler(const struct date_time_evt *evt)
 {
-	switch (evt->type) {
+	switch (evt->type)
+	{
 	case DATE_TIME_OBTAINED_MODEM:
 		/* Fall through. */
 	case DATE_TIME_OBTAINED_NTP:
 		/* Fall through. */
-	case DATE_TIME_OBTAINED_EXT: {
+	case DATE_TIME_OBTAINED_EXT:
+	{
 		SEND_EVENT(data, DATA_EVT_DATE_TIME_OBTAINED);
 
 		/* De-register handler. At this point the application will have
@@ -409,10 +457,10 @@ static int save_config(const void *buf, size_t buf_len)
 {
 	int err;
 
-	err = settings_save_one(DEVICE_SETTINGS_KEY "/"
-				DEVICE_SETTINGS_CONFIG_KEY,
-				buf, buf_len);
-	if (err) {
+	err = settings_save_one(DEVICE_SETTINGS_KEY "/" DEVICE_SETTINGS_CONFIG_KEY,
+							buf, buf_len);
+	if (err)
+	{
 		LOG_WRN("settings_save_one, error: %d", err);
 		return err;
 	}
@@ -424,9 +472,12 @@ static int save_config(const void *buf, size_t buf_len)
 
 static void cloud_codec_event_handler(const struct cloud_codec_evt *evt)
 {
-	if (evt->type == CLOUD_CODEC_EVT_CONFIG_UPDATE) {
+	if (evt->type == CLOUD_CODEC_EVT_CONFIG_UPDATE)
+	{
 		new_config_handle((struct cloud_data_cfg *)&evt->config_update);
-	} else {
+	}
+	else
+	{
 		LOG_ERR("Unknown event.");
 	}
 }
@@ -436,13 +487,15 @@ static int setup(void)
 	int err;
 
 	err = settings_subsys_init();
-	if (err) {
+	if (err)
+	{
 		LOG_ERR("settings_subsys_init, error: %d", err);
 		return err;
 	}
 
 	err = settings_load_subtree(DEVICE_SETTINGS_KEY);
-	if (err) {
+	if (err)
+	{
 		LOG_ERR("settings_load_subtree, error: %d", err);
 		return err;
 	}
@@ -450,12 +503,14 @@ static int setup(void)
 	/* Wait up to 1 seconds for the settings API to load the device configuration stored
 	 * to flash, if any.
 	 */
-	if (k_sem_take(&config_load_sem, K_SECONDS(1)) != 0) {
+	if (k_sem_take(&config_load_sem, K_SECONDS(1)) != 0)
+	{
 		LOG_DBG("Failed retrieveing the device configuration from flash in time");
 	}
 
 	err = cloud_codec_init(&current_cfg, cloud_codec_event_handler);
-	if (err) {
+	if (err)
+	{
 		LOG_ERR("cloud_codec_init, error: %d", err);
 		return err;
 	}
@@ -466,9 +521,12 @@ static int setup(void)
 
 static void config_print_all(void)
 {
-	if (current_cfg.active_mode) {
+	if (current_cfg.active_mode)
+	{
 		LOG_DBG("Device mode: Active");
-	} else {
+	}
+	else
+	{
 		LOG_DBG("Device mode: Passive");
 	}
 
@@ -477,27 +535,36 @@ static void config_print_all(void)
 	LOG_DBG("Movement timeout: %d", current_cfg.movement_timeout);
 	LOG_DBG("Location timeout: %d", current_cfg.location_timeout);
 	LOG_DBG("Accelerometer act threshold: %.2f",
-		 current_cfg.accelerometer_activity_threshold);
+			current_cfg.accelerometer_activity_threshold);
 	LOG_DBG("Accelerometer inact threshold: %.2f",
-		 current_cfg.accelerometer_inactivity_threshold);
+			current_cfg.accelerometer_inactivity_threshold);
 	LOG_DBG("Accelerometer inact timeout: %.2f",
-		 current_cfg.accelerometer_inactivity_timeout);
+			current_cfg.accelerometer_inactivity_timeout);
 
-	if (!current_cfg.no_data.neighbor_cell) {
+	if (!current_cfg.no_data.neighbor_cell)
+	{
 		LOG_DBG("Requesting of neighbor cell data is enabled");
-	} else {
+	}
+	else
+	{
 		LOG_DBG("Requesting of neighbor cell data is disabled");
 	}
 
-	if (!current_cfg.no_data.gnss) {
+	if (!current_cfg.no_data.gnss)
+	{
 		LOG_DBG("Requesting of GNSS data is enabled");
-	} else {
+	}
+	else
+	{
 		LOG_DBG("Requesting of GNSS data is disabled");
 	}
 
-	if (!current_cfg.no_data.wifi) {
+	if (!current_cfg.no_data.wifi)
+	{
 		LOG_DBG("Requesting of Wi-Fi data is enabled");
-	} else {
+	}
+	else
+	{
 		LOG_DBG("Requesting of Wi-Fi data is disabled");
 	}
 }
@@ -515,7 +582,7 @@ static void config_distribute(enum data_module_event_type type)
 }
 
 static void data_send(enum data_module_event_type event,
-		      struct cloud_codec_data *data)
+					  struct cloud_codec_data *data)
 {
 	struct data_module_event *module_event = new_data_module_event();
 
@@ -524,14 +591,17 @@ static void data_send(enum data_module_event_type event,
 	module_event->type = event;
 
 	BUILD_ASSERT((sizeof(data->paths) == sizeof(module_event->data.buffer.paths)),
-			"Size of the object path list does not match");
+				 "Size of the object path list does not match");
 	BUILD_ASSERT((sizeof(data->paths[0]) == sizeof(module_event->data.buffer.paths[0])),
-			"Size of an entry in the object path list does not match");
+				 "Size of an entry in the object path list does not match");
 
-	if (IS_ENABLED(CONFIG_CLOUD_CODEC_LWM2M)) {
+	if (IS_ENABLED(CONFIG_CLOUD_CODEC_LWM2M))
+	{
 		memcpy(module_event->data.buffer.paths, data->paths, sizeof(data->paths));
 		module_event->data.buffer.valid_object_paths = data->valid_object_paths;
-	} else {
+	}
+	else
+	{
 		module_event->data.buffer.buf = data->buf;
 		module_event->data.buffer.len = data->len;
 	}
@@ -546,15 +616,16 @@ static void data_send(enum data_module_event_type event,
 static void data_encode(void)
 {
 	int err;
-	struct cloud_codec_data codec = { 0 };
-	struct lte_lc_conn_eval_params coneval = { 0 };
+	struct cloud_codec_data codec = {0};
+	struct lte_lc_conn_eval_params coneval = {0};
 
 	/* Variable used to override connection evaluation calculations in case connection
 	 * evalution fails for some non-critical reason.
 	 */
 	bool override = false;
 
-	if (!date_time_is_valid()) {
+	if (!date_time_is_valid())
+	{
 		/* Date time library does not have valid time to
 		 * timestamp cloud data. Abort cloud publicaton. Data will
 		 * be cached in it respective ringbuffer.
@@ -565,11 +636,14 @@ static void data_encode(void)
 #if defined(CONFIG_DATA_GRANT_SEND_ON_CONNECTION_QUALITY)
 	/* Perform connection evaluation to determine how expensive it is to send data. */
 	err = lte_lc_conn_eval_params_get(&coneval);
-	if (err < 0) {
+	if (err < 0)
+	{
 		LOG_ERR("lte_lc_conn_eval_params_get, error: %d", err);
 		SEND_ERROR(cloud, CLOUD_EVT_ERROR, err);
 		return;
-	} else if (err > 0) {
+	}
+	else if (err > 0)
+	{
 		LOG_WRN("Connection evaluation failed, error: %d", err);
 
 		/* Positive error codes returned from lte_lc_conn_eval_params_get() indicates
@@ -582,9 +656,11 @@ static void data_encode(void)
 	}
 #endif
 
-	if (grant_send(CLOUD_LOCATION, &coneval, override)) {
+	if (grant_send(CLOUD_LOCATION, &coneval, override))
+	{
 		err = cloud_codec_encode_cloud_location(&codec, &cloud_location);
-		switch (err) {
+		switch (err)
+		{
 		case 0:
 			LOG_DBG("Cloud location data encoded successfully");
 			data_send(DATA_EVT_CLOUD_LOCATION_DATA_SEND, &codec);
@@ -602,16 +678,18 @@ static void data_encode(void)
 		}
 	}
 
-	if (grant_send(GENERIC, &coneval, override)) {
+	if (grant_send(GENERIC, &coneval, override))
+	{
 		err = cloud_codec_encode_data(&codec,
-					      &gnss_buf[head_gnss_buf],
-					      &sensors_buf[head_sensor_buf],
-					      &modem_stat,
-					      &modem_dyn_buf[head_modem_dyn_buf],
-					      &ui_buf[head_ui_buf],
-					      &impact_buf[head_impact_buf],
-					      &bat_buf[head_bat_buf]);
-		switch (err) {
+									  &gnss_buf[head_gnss_buf],
+									  &sensors_buf[head_sensor_buf],
+									  &modem_stat,
+									  &modem_dyn_buf[head_modem_dyn_buf],
+									  &ui_buf[head_ui_buf],
+									  &impact_buf[head_impact_buf],
+									  &bat_buf[head_bat_buf]);
+		switch (err)
+		{
 		case 0:
 			LOG_DBG("Data encoded successfully");
 			data_send(DATA_EVT_DATA_SEND, &codec);
@@ -632,23 +710,25 @@ static void data_encode(void)
 		}
 	}
 
-	if (grant_send(BATCH, &coneval, override)) {
+	if (grant_send(BATCH, &coneval, override))
+	{
 		err = cloud_codec_encode_batch_data(&codec,
-						    gnss_buf,
-						    sensors_buf,
-						    &modem_stat,
-						    modem_dyn_buf,
-						    ui_buf,
-						    impact_buf,
-						    bat_buf,
-						    ARRAY_SIZE(gnss_buf),
-						    ARRAY_SIZE(sensors_buf),
-						    MODEM_STATIC_ARRAY_SIZE,
-						    ARRAY_SIZE(modem_dyn_buf),
-						    ARRAY_SIZE(ui_buf),
-						    ARRAY_SIZE(impact_buf),
-						    ARRAY_SIZE(bat_buf));
-		switch (err) {
+											gnss_buf,
+											sensors_buf,
+											&modem_stat,
+											modem_dyn_buf,
+											ui_buf,
+											impact_buf,
+											bat_buf,
+											ARRAY_SIZE(gnss_buf),
+											ARRAY_SIZE(sensors_buf),
+											MODEM_STATIC_ARRAY_SIZE,
+											ARRAY_SIZE(modem_dyn_buf),
+											ARRAY_SIZE(ui_buf),
+											ARRAY_SIZE(impact_buf),
+											ARRAY_SIZE(bat_buf));
+		switch (err)
+		{
 		case 0:
 			LOG_DBG("Batch data encoded successfully");
 			data_send(DATA_EVT_DATA_SEND_BATCH, &codec);
@@ -674,19 +754,22 @@ static int get_modem_info(struct modem_param_info *const modem_info)
 
 	int err = modem_info_init();
 
-	if (err) {
+	if (err)
+	{
 		LOG_ERR("Could not initialize modem info module, error: %d", err);
 		return err;
 	}
 
 	err = modem_info_params_init(modem_info);
-	if (err) {
+	if (err)
+	{
 		LOG_ERR("Could not initialize modem info parameters, error: %d", err);
 		return err;
 	}
 
 	err = modem_info_params_get(modem_info);
-	if (err) {
+	if (err)
+	{
 		LOG_ERR("Could not obtain cell information, error: %d", err);
 		return err;
 	}
@@ -712,24 +795,28 @@ static int agps_request_encode(struct nrf_modem_gnss_agps_data_frame *incoming_r
 	static struct cloud_data_agps_request cloud_agps_request = {0};
 
 	err = get_modem_info(&modem_info);
-	if (err) {
+	if (err)
+	{
 		return err;
 	}
 
-	if (incoming_request == NULL) {
+	if (incoming_request == NULL)
+	{
 		const uint32_t mask = IS_ENABLED(CONFIG_NRF_CLOUD_PGPS) ? 0u : 0xFFFFFFFFu;
 
 		LOG_DBG("Requesting all A-GPS elements");
 		cloud_agps_request.request.sv_mask_ephe = mask,
 		cloud_agps_request.request.sv_mask_alm = mask,
 		cloud_agps_request.request.data_flags =
-					NRF_MODEM_GNSS_AGPS_GPS_UTC_REQUEST |
-					NRF_MODEM_GNSS_AGPS_KLOBUCHAR_REQUEST |
-					NRF_MODEM_GNSS_AGPS_NEQUICK_REQUEST |
-					NRF_MODEM_GNSS_AGPS_SYS_TIME_AND_SV_TOW_REQUEST |
-					NRF_MODEM_GNSS_AGPS_POSITION_REQUEST |
-					NRF_MODEM_GNSS_AGPS_INTEGRITY_REQUEST;
-	} else {
+			NRF_MODEM_GNSS_AGPS_GPS_UTC_REQUEST |
+			NRF_MODEM_GNSS_AGPS_KLOBUCHAR_REQUEST |
+			NRF_MODEM_GNSS_AGPS_NEQUICK_REQUEST |
+			NRF_MODEM_GNSS_AGPS_SYS_TIME_AND_SV_TOW_REQUEST |
+			NRF_MODEM_GNSS_AGPS_POSITION_REQUEST |
+			NRF_MODEM_GNSS_AGPS_INTEGRITY_REQUEST;
+	}
+	else
+	{
 		cloud_agps_request.request = *incoming_request;
 	}
 
@@ -740,7 +827,8 @@ static int agps_request_encode(struct nrf_modem_gnss_agps_data_frame *incoming_r
 	cloud_agps_request.queued = true;
 
 	err = cloud_codec_encode_agps_request(&codec, &cloud_agps_request);
-	switch (err) {
+	switch (err)
+	{
 	case 0:
 		LOG_DBG("A-GPS request encoded successfully");
 		data_send(DATA_EVT_AGPS_REQUEST_DATA_SEND, &codec);
@@ -769,13 +857,16 @@ static void config_get(void)
 static void config_send(void)
 {
 	int err;
-	struct cloud_codec_data codec = { 0 };
+	struct cloud_codec_data codec = {0};
 
 	err = cloud_codec_encode_config(&codec, &current_cfg);
-	if (err == -ENOTSUP) {
+	if (err == -ENOTSUP)
+	{
 		LOG_WRN("Encoding of device configuration is not supported");
 		return;
-	} else if (err) {
+	}
+	else if (err)
+	{
 		LOG_ERR("Error encoding configuration, error: %d", err);
 		SEND_ERROR(data, DATA_EVT_ERROR, err);
 		return;
@@ -789,7 +880,8 @@ static void data_ui_send(void)
 	int err;
 	struct cloud_codec_data codec = {0};
 
-	if (!date_time_is_valid()) {
+	if (!date_time_is_valid())
+	{
 		/* Date time library does not have valid time to
 		 * timestamp cloud data. Abort cloud publicaton. Data will
 		 * be cached in it respective ringbuffer.
@@ -798,13 +890,18 @@ static void data_ui_send(void)
 	}
 
 	err = cloud_codec_encode_ui_data(&codec, &ui_buf[head_ui_buf]);
-	if (err == -ENODATA) {
+	if (err == -ENODATA)
+	{
 		LOG_DBG("No new UI data to encode, error: %d", err);
 		return;
-	} else if (err == -ENOTSUP) {
+	}
+	else if (err == -ENOTSUP)
+	{
 		LOG_ERR("Encoding of UI data is not supported, error: %d", err);
 		return;
-	} else if (err) {
+	}
+	else if (err)
+	{
 		LOG_ERR("Encoding button press, error: %d", err);
 		SEND_ERROR(data, DATA_EVT_ERROR, err);
 		return;
@@ -818,18 +915,24 @@ static void data_impact_send(void)
 	int err;
 	struct cloud_codec_data codec = {0};
 
-	if (!date_time_is_valid()) {
+	if (!date_time_is_valid())
+	{
 		return;
 	}
 
 	err = cloud_codec_encode_impact_data(&codec, &impact_buf[head_impact_buf]);
-	if (err == -ENODATA) {
+	if (err == -ENODATA)
+	{
 		LOG_DBG("No new impact data to encode, error: %d", err);
 		return;
-	} else if (err == -ENOTSUP) {
+	}
+	else if (err == -ENOTSUP)
+	{
 		LOG_WRN("Encoding of impact data is not supported, error: %d", err);
 		return;
-	} else if (err) {
+	}
+	else if (err)
+	{
 		LOG_ERR("Encoding impact data failed, error: %d", err);
 		SEND_ERROR(data, DATA_EVT_ERROR, err);
 		return;
@@ -854,7 +957,8 @@ static void data_send_work_fn(struct k_work *work)
 
 static void requested_data_status_set(enum app_module_data_type data_type)
 {
-	if (!k_work_delayable_is_pending(&data_send_work)) {
+	if (!k_work_delayable_is_pending(&data_send_work))
+	{
 		/* If the data_send_work is not pending it means that the module has already
 		 * triggered an data encode/send.
 		 */
@@ -862,29 +966,34 @@ static void requested_data_status_set(enum app_module_data_type data_type)
 		return;
 	}
 
-	for (size_t i = 0; i < recv_req_data_count; i++) {
-		if (req_type_list[i] == data_type) {
+	for (size_t i = 0; i < recv_req_data_count; i++)
+	{
+		if (req_type_list[i] == data_type)
+		{
 			req_data_count++;
 			break;
 		}
 	}
 
-	if (req_data_count == recv_req_data_count) {
+	if (req_data_count == recv_req_data_count)
+	{
 		data_send_work_fn(NULL);
 	}
 }
 
 static void requested_data_list_set(enum app_module_data_type *data_list,
-				    size_t count)
+									size_t count)
 {
-	if ((count == 0) || (count > APP_DATA_COUNT)) {
+	if ((count == 0) || (count > APP_DATA_COUNT))
+	{
 		LOG_ERR("Invalid data type list length");
 		return;
 	}
 
 	requested_data_clear();
 
-	for (size_t i = 0; i < count; i++) {
+	for (size_t i = 0; i < count; i++)
+	{
 		req_type_list[i] = data_list[i];
 	}
 
@@ -896,140 +1005,179 @@ static void new_config_handle(struct cloud_data_cfg *new_config)
 	bool config_change = false;
 
 	/* Guards making sure that only new configuration values are applied. */
-	if (current_cfg.active_mode != new_config->active_mode) {
+	if (current_cfg.active_mode != new_config->active_mode)
+	{
 		current_cfg.active_mode = new_config->active_mode;
 
-		if (current_cfg.active_mode) {
+		if (current_cfg.active_mode)
+		{
 			LOG_DBG("New Device mode: Active");
-		} else {
+		}
+		else
+		{
 			LOG_DBG("New Device mode: Passive");
 		}
 
 		config_change = true;
 	}
 
-	if (current_cfg.no_data.gnss != new_config->no_data.gnss) {
+	if (current_cfg.no_data.gnss != new_config->no_data.gnss)
+	{
 		current_cfg.no_data.gnss = new_config->no_data.gnss;
 
-		if (!current_cfg.no_data.gnss) {
+		if (!current_cfg.no_data.gnss)
+		{
 			LOG_DBG("Requesting of GNSS data is enabled");
-		} else {
+		}
+		else
+		{
 			LOG_DBG("Requesting of GNSS data is disabled");
 		}
 
 		config_change = true;
 	}
 
-	if (current_cfg.no_data.neighbor_cell != new_config->no_data.neighbor_cell) {
+	if (current_cfg.no_data.neighbor_cell != new_config->no_data.neighbor_cell)
+	{
 		current_cfg.no_data.neighbor_cell = new_config->no_data.neighbor_cell;
 
-		if (!current_cfg.no_data.neighbor_cell) {
+		if (!current_cfg.no_data.neighbor_cell)
+		{
 			LOG_DBG("Requesting of neighbor cell data is enabled");
-		} else {
+		}
+		else
+		{
 			LOG_DBG("Requesting of neighbor cell data is disabled");
 		}
 
 		config_change = true;
 	}
 
-	if (current_cfg.no_data.wifi != new_config->no_data.wifi) {
+	if (current_cfg.no_data.wifi != new_config->no_data.wifi)
+	{
 		current_cfg.no_data.wifi = new_config->no_data.wifi;
 
-		if (!current_cfg.no_data.wifi) {
+		if (!current_cfg.no_data.wifi)
+		{
 			LOG_DBG("Requesting of Wi-Fi data is enabled");
-		} else {
+		}
+		else
+		{
 			LOG_DBG("Requesting of Wi-Fi data is disabled");
 		}
 
 		config_change = true;
 	}
 
-	if (new_config->location_timeout > 0) {
-		if (current_cfg.location_timeout != new_config->location_timeout) {
+	if (new_config->location_timeout > 0)
+	{
+		if (current_cfg.location_timeout != new_config->location_timeout)
+		{
 			current_cfg.location_timeout = new_config->location_timeout;
 
 			LOG_DBG("New location timeout: %d", current_cfg.location_timeout);
 
 			config_change = true;
 		}
-	} else {
+	}
+	else
+	{
 		LOG_WRN("New location timeout out of range: %d", new_config->location_timeout);
 	}
 
-	if (new_config->active_wait_timeout > 0) {
-		if (current_cfg.active_wait_timeout != new_config->active_wait_timeout) {
+	if (new_config->active_wait_timeout > 0)
+	{
+		if (current_cfg.active_wait_timeout != new_config->active_wait_timeout)
+		{
 			current_cfg.active_wait_timeout = new_config->active_wait_timeout;
 
 			LOG_DBG("New Active wait timeout: %d", current_cfg.active_wait_timeout);
 
 			config_change = true;
 		}
-	} else {
+	}
+	else
+	{
 		LOG_WRN("New Active timeout out of range: %d", new_config->active_wait_timeout);
 	}
 
-	if (new_config->movement_resolution > 0) {
-		if (current_cfg.movement_resolution != new_config->movement_resolution) {
+	if (new_config->movement_resolution > 0)
+	{
+		if (current_cfg.movement_resolution != new_config->movement_resolution)
+		{
 			current_cfg.movement_resolution = new_config->movement_resolution;
 
 			LOG_DBG("New Movement resolution: %d", current_cfg.movement_resolution);
 
 			config_change = true;
 		}
-	} else {
+	}
+	else
+	{
 		LOG_WRN("New Movement resolution out of range: %d",
-			new_config->movement_resolution);
+				new_config->movement_resolution);
 	}
 
-	if (new_config->movement_timeout > 0) {
-		if (current_cfg.movement_timeout != new_config->movement_timeout) {
+	if (new_config->movement_timeout > 0)
+	{
+		if (current_cfg.movement_timeout != new_config->movement_timeout)
+		{
 			current_cfg.movement_timeout = new_config->movement_timeout;
 
 			LOG_DBG("New Movement timeout: %d", current_cfg.movement_timeout);
 
 			config_change = true;
 		}
-	} else {
+	}
+	else
+	{
 		LOG_WRN("New Movement timeout out of range: %d", new_config->movement_timeout);
 	}
 
 	if (current_cfg.accelerometer_activity_threshold !=
-	    new_config->accelerometer_activity_threshold) {
+		new_config->accelerometer_activity_threshold)
+	{
 		current_cfg.accelerometer_activity_threshold =
-		new_config->accelerometer_activity_threshold;
+			new_config->accelerometer_activity_threshold;
 		LOG_DBG("New Accelerometer act threshold: %.2f",
-			current_cfg.accelerometer_activity_threshold);
+				current_cfg.accelerometer_activity_threshold);
 		config_change = true;
 	}
 	if (current_cfg.accelerometer_inactivity_threshold !=
-	    new_config->accelerometer_inactivity_threshold) {
+		new_config->accelerometer_inactivity_threshold)
+	{
 		current_cfg.accelerometer_inactivity_threshold =
-		new_config->accelerometer_inactivity_threshold;
+			new_config->accelerometer_inactivity_threshold;
 		LOG_DBG("New Accelerometer inact threshold: %.2f",
-			current_cfg.accelerometer_inactivity_threshold);
+				current_cfg.accelerometer_inactivity_threshold);
 		config_change = true;
 	}
 	if (current_cfg.accelerometer_inactivity_timeout !=
-	    new_config->accelerometer_inactivity_timeout) {
+		new_config->accelerometer_inactivity_timeout)
+	{
 		current_cfg.accelerometer_inactivity_timeout =
-		new_config->accelerometer_inactivity_timeout;
+			new_config->accelerometer_inactivity_timeout;
 		LOG_DBG("New Accelerometer inact timeout: %.2f",
-			current_cfg.accelerometer_inactivity_timeout);
+				current_cfg.accelerometer_inactivity_timeout);
 		config_change = true;
 	}
 
 	/* If there has been a change in the currently applied device configuration we want to store
 	 * the configuration to flash and distribute it to other modules.
 	 */
-	if (config_change) {
+	if (config_change)
+	{
 		int err = save_config(&current_cfg, sizeof(current_cfg));
 
-		if (err) {
+		if (err)
+		{
 			LOG_ERR("Configuration not stored, error: %d", err);
 		}
 
 		config_distribute(DATA_EVT_CONFIG_READY);
-	} else {
+	}
+	else
+	{
 		LOG_DBG("No new values in incoming device configuration update message");
 	}
 
@@ -1039,7 +1187,8 @@ static void new_config_handle(struct cloud_data_cfg *new_config)
 	 */
 
 	/* LwM2M doesn't require reporting of the current configuration back to cloud. */
-	if (IS_ENABLED(CONFIG_LWM2M_INTEGRATION)) {
+	if (IS_ENABLED(CONFIG_LWM2M_INTEGRATION))
+	{
 		return;
 	}
 
@@ -1062,7 +1211,8 @@ static void agps_request_handle(struct nrf_modem_gnss_agps_data_frame *incoming_
 #if defined(CONFIG_NRF_CLOUD_AGPS)
 	struct nrf_modem_gnss_agps_data_frame request;
 
-	if (incoming_request != NULL) {
+	if (incoming_request != NULL)
+	{
 		request.sv_mask_ephe = incoming_request->sv_mask_ephe;
 		request.sv_mask_alm = incoming_request->sv_mask_alm;
 		request.data_flags = incoming_request->data_flags;
@@ -1072,13 +1222,16 @@ static void agps_request_handle(struct nrf_modem_gnss_agps_data_frame *incoming_
 	/* If CONFIG_NRF_CLOUD_MQTT is enabled, the nRF Cloud MQTT transport library will be used
 	 * to send the request.
 	 */
-	err = (incoming_request == NULL) ? nrf_cloud_agps_request_all() :
-					   nrf_cloud_agps_request(&request);
-	if (err) {
+	err = (incoming_request == NULL) ? nrf_cloud_agps_request_all() : nrf_cloud_agps_request(&request);
+	if (err)
+	{
 		LOG_WRN("Failed to request A-GPS data, error: %d", err);
 		LOG_DBG("This is expected to fail if we are not in a connected state");
-	} else {
-		if (nrf_cloud_agps_request_in_progress()) {
+	}
+	else
+	{
+		if (nrf_cloud_agps_request_in_progress())
+		{
 			LOG_DBG("A-GPS request sent");
 			return;
 		}
@@ -1090,11 +1243,13 @@ static void agps_request_handle(struct nrf_modem_gnss_agps_data_frame *incoming_
 	 * A-GPS request and send out an event containing the request for the cloud module to pick
 	 * up and send to the cloud that is currently used.
 	 */
-	err = (incoming_request == NULL) ? agps_request_encode(NULL) :
-					   agps_request_encode(&request);
-	if (err) {
+	err = (incoming_request == NULL) ? agps_request_encode(NULL) : agps_request_encode(&request);
+	if (err)
+	{
 		LOG_WRN("Failed to request A-GPS data, error: %d", err);
-	} else {
+	}
+	else
+	{
 		LOG_DBG("A-GPS request sent");
 		return;
 	}
@@ -1106,7 +1261,8 @@ static void agps_request_handle(struct nrf_modem_gnss_agps_data_frame *incoming_
 	 * P-GPS data for current time is available.
 	 */
 	err = nrf_cloud_pgps_notify_prediction();
-	if (err) {
+	if (err)
+	{
 		LOG_ERR("Requesting notification of prediction availability, error: %d", err);
 	}
 #endif
@@ -1117,9 +1273,11 @@ static void agps_request_handle(struct nrf_modem_gnss_agps_data_frame *incoming_
 /* Message handler for STATE_CLOUD_DISCONNECTED. */
 static void on_cloud_state_disconnected(struct data_msg_data *msg)
 {
-	if (IS_EVENT(msg, cloud, CLOUD_EVT_CONNECTED)) {
+	if (IS_EVENT(msg, cloud, CLOUD_EVT_CONNECTED))
+	{
 		state_set(STATE_CLOUD_CONNECTED);
-		if (agps_request_buffered) {
+		if (agps_request_buffered)
+		{
 			LOG_DBG("Handle buffered A-GPS request");
 			agps_request_handle(&agps_request_buffer);
 			agps_request_buffered = false;
@@ -1128,11 +1286,13 @@ static void on_cloud_state_disconnected(struct data_msg_data *msg)
 	}
 
 	if (IS_EVENT(msg, cloud, CLOUD_EVT_CONFIG_EMPTY) &&
-	    IS_ENABLED(CONFIG_NRF_CLOUD_MQTT)) {
+		IS_ENABLED(CONFIG_NRF_CLOUD_MQTT))
+	{
 		config_send();
 	}
 
-	if (IS_EVENT(msg, location, LOCATION_MODULE_EVT_AGPS_NEEDED)) {
+	if (IS_EVENT(msg, location, LOCATION_MODULE_EVT_AGPS_NEEDED))
+	{
 		LOG_DBG("A-GPS request buffered");
 		agps_request_buffered = true;
 		agps_request_buffer = msg->module.location.data.agps_request;
@@ -1143,37 +1303,44 @@ static void on_cloud_state_disconnected(struct data_msg_data *msg)
 /* Message handler for STATE_CLOUD_CONNECTED. */
 static void on_cloud_state_connected(struct data_msg_data *msg)
 {
-	if (IS_EVENT(msg, data, DATA_EVT_DATA_READY)) {
+	if (IS_EVENT(msg, data, DATA_EVT_DATA_READY))
+	{
 		data_encode();
 		return;
 	}
 
-	if (IS_EVENT(msg, app, APP_EVT_CONFIG_GET)) {
+	if (IS_EVENT(msg, app, APP_EVT_CONFIG_GET))
+	{
 		config_get();
 		return;
 	}
 
-	if (IS_EVENT(msg, data, DATA_EVT_UI_DATA_READY)) {
+	if (IS_EVENT(msg, data, DATA_EVT_UI_DATA_READY))
+	{
 		data_ui_send();
 		return;
 	}
 
-	if (IS_EVENT(msg, data, DATA_EVT_IMPACT_DATA_READY)) {
+	if (IS_EVENT(msg, data, DATA_EVT_IMPACT_DATA_READY))
+	{
 		data_impact_send();
 		return;
 	}
 
-	if (IS_EVENT(msg, cloud, CLOUD_EVT_DISCONNECTED)) {
+	if (IS_EVENT(msg, cloud, CLOUD_EVT_DISCONNECTED))
+	{
 		state_set(STATE_CLOUD_DISCONNECTED);
 		return;
 	}
 
-	if (IS_EVENT(msg, cloud, CLOUD_EVT_CONFIG_EMPTY)) {
+	if (IS_EVENT(msg, cloud, CLOUD_EVT_CONFIG_EMPTY))
+	{
 		config_send();
 		return;
 	}
 
-	if (IS_EVENT(msg, location, LOCATION_MODULE_EVT_AGPS_NEEDED)) {
+	if (IS_EVENT(msg, location, LOCATION_MODULE_EVT_AGPS_NEEDED))
+	{
 		agps_request_handle(&msg->module.location.data.agps_request);
 		return;
 	}
@@ -1183,7 +1350,8 @@ static void on_cloud_state_connected(struct data_msg_data *msg)
 static void on_all_states(struct data_msg_data *msg)
 {
 	/* Distribute new configuration received from cloud. */
-	if (IS_EVENT(msg, cloud, CLOUD_EVT_CONFIG_RECEIVED)) {
+	if (IS_EVENT(msg, cloud, CLOUD_EVT_CONFIG_RECEIVED))
+	{
 		struct cloud_data_cfg new = {
 			.active_mode =
 				msg->module.cloud.data.config.active_mode,
@@ -1206,19 +1374,20 @@ static void on_all_states(struct data_msg_data *msg)
 			.no_data.neighbor_cell =
 				msg->module.cloud.data.config.no_data.neighbor_cell,
 			.no_data.wifi =
-				msg->module.cloud.data.config.no_data.wifi
-		};
+				msg->module.cloud.data.config.no_data.wifi};
 
 		new_config_handle(&new);
 		return;
 	}
 
-	if (IS_EVENT(msg, app, APP_EVT_START)) {
+	if (IS_EVENT(msg, app, APP_EVT_START))
+	{
 		config_print_all();
 		config_distribute(DATA_EVT_CONFIG_INIT);
 	}
 
-	if (IS_EVENT(msg, util, UTIL_EVT_SHUTDOWN_REQUEST)) {
+	if (IS_EVENT(msg, util, UTIL_EVT_SHUTDOWN_REQUEST))
+	{
 		/* The module doesn't have anything to shut down and can
 		 * report back immediately.
 		 */
@@ -1226,59 +1395,62 @@ static void on_all_states(struct data_msg_data *msg)
 		state_set(STATE_SHUTDOWN);
 	}
 
-	if (IS_EVENT(msg, app, APP_EVT_DATA_GET)) {
+	if (IS_EVENT(msg, app, APP_EVT_DATA_GET))
+	{
 		/* Store which data is requested by the app, later to be used
 		 * to confirm data is reported to the data manager.
 		 */
 		requested_data_list_set(msg->module.app.data_list,
-					msg->module.app.count);
+								msg->module.app.count);
 
 		/* Start countdown until data must have been received by the
 		 * Data module in order to be sent to cloud
 		 */
 		k_work_reschedule(&data_send_work,
-				      K_SECONDS(msg->module.app.timeout));
+						  K_SECONDS(msg->module.app.timeout));
 
 		return;
 	}
 
-	if (IS_EVENT(msg, ui, UI_EVT_BUTTON_DATA_READY)) {
+	if (IS_EVENT(msg, ui, UI_EVT_BUTTON_DATA_READY))
+	{
 		struct cloud_data_ui new_ui_data = {
 			.btn = msg->module.ui.data.ui.button_number,
 			.btn_ts = msg->module.ui.data.ui.timestamp,
-			.queued = true
-		};
+			.queued = true};
 
 		cloud_codec_populate_ui_buffer(ui_buf, &new_ui_data,
-					       &head_ui_buf,
-					       ARRAY_SIZE(ui_buf));
+									   &head_ui_buf,
+									   ARRAY_SIZE(ui_buf));
 
 		SEND_EVENT(data, DATA_EVT_UI_DATA_READY);
 		return;
 	}
 
-	if (IS_EVENT(msg, modem, MODEM_EVT_MODEM_STATIC_DATA_NOT_READY)) {
+	if (IS_EVENT(msg, modem, MODEM_EVT_MODEM_STATIC_DATA_NOT_READY))
+	{
 		requested_data_status_set(APP_DATA_MODEM_STATIC);
 	}
 
-	if (IS_EVENT(msg, modem, MODEM_EVT_MODEM_STATIC_DATA_READY)) {
+	if (IS_EVENT(msg, modem, MODEM_EVT_MODEM_STATIC_DATA_READY))
+	{
 		modem_stat.ts = msg->module.modem.data.modem_static.timestamp;
 		modem_stat.queued = true;
 
 		BUILD_ASSERT(sizeof(modem_stat.appv) >=
-			     sizeof(msg->module.modem.data.modem_static.app_version));
+					 sizeof(msg->module.modem.data.modem_static.app_version));
 
 		BUILD_ASSERT(sizeof(modem_stat.brdv) >=
-			     sizeof(msg->module.modem.data.modem_static.board_version));
+					 sizeof(msg->module.modem.data.modem_static.board_version));
 
 		BUILD_ASSERT(sizeof(modem_stat.fw) >=
-			     sizeof(msg->module.modem.data.modem_static.modem_fw));
+					 sizeof(msg->module.modem.data.modem_static.modem_fw));
 
 		BUILD_ASSERT(sizeof(modem_stat.iccid) >=
-			     sizeof(msg->module.modem.data.modem_static.iccid));
+					 sizeof(msg->module.modem.data.modem_static.iccid));
 
 		BUILD_ASSERT(sizeof(modem_stat.imei) >=
-			     sizeof(msg->module.modem.data.modem_static.imei));
+					 sizeof(msg->module.modem.data.modem_static.imei));
 
 		strcpy(modem_stat.appv, msg->module.modem.data.modem_static.app_version);
 		strcpy(modem_stat.brdv, msg->module.modem.data.modem_static.board_version);
@@ -1289,11 +1461,13 @@ static void on_all_states(struct data_msg_data *msg)
 		requested_data_status_set(APP_DATA_MODEM_STATIC);
 	}
 
-	if (IS_EVENT(msg, modem, MODEM_EVT_MODEM_DYNAMIC_DATA_NOT_READY)) {
+	if (IS_EVENT(msg, modem, MODEM_EVT_MODEM_DYNAMIC_DATA_NOT_READY))
+	{
 		requested_data_status_set(APP_DATA_MODEM_DYNAMIC);
 	}
 
-	if (IS_EVENT(msg, modem, MODEM_EVT_MODEM_DYNAMIC_DATA_READY)) {
+	if (IS_EVENT(msg, modem, MODEM_EVT_MODEM_DYNAMIC_DATA_READY))
+	{
 		struct cloud_data_modem_dynamic new_modem_data = {
 			.area = msg->module.modem.data.modem_dynamic.area_code,
 			.nw_mode = msg->module.modem.data.modem_dynamic.nw_mode,
@@ -1303,94 +1477,96 @@ static void on_all_states(struct data_msg_data *msg)
 			.mcc = msg->module.modem.data.modem_dynamic.mcc,
 			.mnc = msg->module.modem.data.modem_dynamic.mnc,
 			.ts = msg->module.modem.data.modem_dynamic.timestamp,
-			.queued = true
-		};
+			.queued = true};
 
 		BUILD_ASSERT(sizeof(new_modem_data.ip) >=
-			     sizeof(msg->module.modem.data.modem_dynamic.ip_address));
+					 sizeof(msg->module.modem.data.modem_dynamic.ip_address));
 
 		BUILD_ASSERT(sizeof(new_modem_data.apn) >=
-			     sizeof(msg->module.modem.data.modem_dynamic.apn));
+					 sizeof(msg->module.modem.data.modem_dynamic.apn));
 
 		BUILD_ASSERT(sizeof(new_modem_data.apn) >=
-			     sizeof(msg->module.modem.data.modem_dynamic.apn));
+					 sizeof(msg->module.modem.data.modem_dynamic.apn));
 
 		strcpy(new_modem_data.ip, msg->module.modem.data.modem_dynamic.ip_address);
 		strcpy(new_modem_data.apn, msg->module.modem.data.modem_dynamic.apn);
 		strcpy(new_modem_data.mccmnc, msg->module.modem.data.modem_dynamic.mccmnc);
 
 		cloud_codec_populate_modem_dynamic_buffer(
-						modem_dyn_buf,
-						&new_modem_data,
-						&head_modem_dyn_buf,
-						ARRAY_SIZE(modem_dyn_buf));
+			modem_dyn_buf,
+			&new_modem_data,
+			&head_modem_dyn_buf,
+			ARRAY_SIZE(modem_dyn_buf));
 
 		requested_data_status_set(APP_DATA_MODEM_DYNAMIC);
 	}
 
-	if (IS_EVENT(msg, modem, MODEM_EVT_BATTERY_DATA_NOT_READY)) {
+	if (IS_EVENT(msg, modem, MODEM_EVT_BATTERY_DATA_NOT_READY))
+	{
 		requested_data_status_set(APP_DATA_BATTERY);
 	}
 
-	if (IS_EVENT(msg, sensor, SENSOR_EVT_FUEL_GAUGE_READY)) {
+	if (IS_EVENT(msg, sensor, SENSOR_EVT_FUEL_GAUGE_READY))
+	{
 		struct cloud_data_battery new_battery_data = {
 			.bat = msg->module.sensor.data.bat.battery_level,
 			.bat_ts = msg->module.sensor.data.bat.timestamp,
-			.queued = true
-		};
+			.queued = true};
 
 		cloud_codec_populate_bat_buffer(bat_buf, &new_battery_data,
-						&head_bat_buf,
-						ARRAY_SIZE(bat_buf));
+										&head_bat_buf,
+										ARRAY_SIZE(bat_buf));
 
 		requested_data_status_set(APP_DATA_BATTERY);
 	}
 
-	if (IS_EVENT(msg, sensor, SENSOR_EVT_FUEL_GAUGE_NOT_SUPPORTED)) {
+	if (IS_EVENT(msg, sensor, SENSOR_EVT_FUEL_GAUGE_NOT_SUPPORTED))
+	{
 		requested_data_status_set(APP_DATA_BATTERY);
 	}
 
-	if (IS_EVENT(msg, sensor, SENSOR_EVT_ENVIRONMENTAL_DATA_READY)) {
+	if (IS_EVENT(msg, sensor, SENSOR_EVT_ENVIRONMENTAL_DATA_READY))
+	{
 		struct cloud_data_sensors new_sensor_data = {
 			.temperature = msg->module.sensor.data.sensors.temperature,
 			.humidity = msg->module.sensor.data.sensors.humidity,
 			.pressure = msg->module.sensor.data.sensors.pressure,
 			.bsec_air_quality = msg->module.sensor.data.sensors.bsec_air_quality,
 			.env_ts = msg->module.sensor.data.sensors.timestamp,
-			.queued = true
-		};
+			.queued = true};
 
 		cloud_codec_populate_sensor_buffer(sensors_buf,
-						   &new_sensor_data,
-						   &head_sensor_buf,
-						   ARRAY_SIZE(sensors_buf));
+										   &new_sensor_data,
+										   &head_sensor_buf,
+										   ARRAY_SIZE(sensors_buf));
 
 		requested_data_status_set(APP_DATA_ENVIRONMENTAL);
 	}
 
-	if (IS_EVENT(msg, sensor, SENSOR_EVT_ENVIRONMENTAL_NOT_SUPPORTED)) {
+	if (IS_EVENT(msg, sensor, SENSOR_EVT_ENVIRONMENTAL_NOT_SUPPORTED))
+	{
 		requested_data_status_set(APP_DATA_ENVIRONMENTAL);
 	}
 
-	if (IS_EVENT(msg, sensor, SENSOR_EVT_MOVEMENT_IMPACT_DETECTED)) {
+	if (IS_EVENT(msg, sensor, SENSOR_EVT_MOVEMENT_IMPACT_DETECTED))
+	{
 		struct cloud_data_impact new_impact_data = {
 			.magnitude = msg->module.sensor.data.impact.magnitude,
 			.ts = msg->module.sensor.data.impact.timestamp,
-			.queued = true
-		};
+			.queued = true};
 
 		cloud_codec_populate_impact_buffer(impact_buf, &new_impact_data,
-						   &head_impact_buf,
-						   ARRAY_SIZE(impact_buf));
+										   &head_impact_buf,
+										   ARRAY_SIZE(impact_buf));
 		SEND_EVENT(data, DATA_EVT_IMPACT_DATA_READY);
 		return;
 	}
 
-	if (IS_EVENT(msg, location, LOCATION_MODULE_EVT_GNSS_DATA_READY)) {
+	if (IS_EVENT(msg, location, LOCATION_MODULE_EVT_GNSS_DATA_READY))
+	{
 		struct cloud_data_gnss new_location_data = {
 			.gnss_ts = msg->module.location.data.location.timestamp,
-			.queued = true
-		};
+			.queued = true};
 
 		new_location_data.pvt.acc = msg->module.location.data.location.pvt.accuracy;
 		new_location_data.pvt.alt = msg->module.location.data.location.pvt.altitude;
@@ -1400,25 +1576,28 @@ static void on_all_states(struct data_msg_data *msg)
 		new_location_data.pvt.spd = msg->module.location.data.location.pvt.speed;
 
 		cloud_codec_populate_gnss_buffer(gnss_buf, &new_location_data,
-						&head_gnss_buf,
-						ARRAY_SIZE(gnss_buf));
+										 &head_gnss_buf,
+										 ARRAY_SIZE(gnss_buf));
 
 		requested_data_status_set(APP_DATA_LOCATION);
 	}
 
-	if (IS_EVENT(msg, location, LOCATION_MODULE_EVT_DATA_NOT_READY)) {
+	if (IS_EVENT(msg, location, LOCATION_MODULE_EVT_DATA_NOT_READY))
+	{
 		requested_data_status_set(APP_DATA_LOCATION);
 	}
 
-	if (IS_EVENT(msg, location, LOCATION_MODULE_EVT_CLOUD_LOCATION_DATA_READY)) {
-		if (msg->module.location.data.cloud_location.neighbor_cells_valid) {
+	if (IS_EVENT(msg, location, LOCATION_MODULE_EVT_CLOUD_LOCATION_DATA_READY))
+	{
+		if (msg->module.location.data.cloud_location.neighbor_cells_valid)
+		{
 			BUILD_ASSERT(sizeof(cloud_location.neighbor_cells.cell_data) ==
-				     sizeof(msg->module.location.data.cloud_location
-					.neighbor_cells.cell_data));
+						 sizeof(msg->module.location.data.cloud_location
+									.neighbor_cells.cell_data));
 
 			BUILD_ASSERT(sizeof(cloud_location.neighbor_cells.neighbor_cells) ==
-				     sizeof(msg->module.location.data.cloud_location
-					.neighbor_cells.neighbor_cells));
+						 sizeof(msg->module.location.data.cloud_location
+									.neighbor_cells.neighbor_cells));
 
 			cloud_location.neighbor_cells_valid = true;
 			cloud_location.neighbor_cells.ts =
@@ -1426,19 +1605,20 @@ static void on_all_states(struct data_msg_data *msg)
 			cloud_location.neighbor_cells.queued = true;
 
 			memcpy(&cloud_location.neighbor_cells.cell_data,
-			       &msg->module.location.data.cloud_location.neighbor_cells.cell_data,
-			       sizeof(cloud_location.neighbor_cells.cell_data));
+				   &msg->module.location.data.cloud_location.neighbor_cells.cell_data,
+				   sizeof(cloud_location.neighbor_cells.cell_data));
 
 			memcpy(&cloud_location.neighbor_cells.neighbor_cells,
-			       &msg->module.location.data.cloud_location
-					.neighbor_cells.neighbor_cells,
-			       sizeof(cloud_location.neighbor_cells.neighbor_cells));
+				   &msg->module.location.data.cloud_location
+						.neighbor_cells.neighbor_cells,
+				   sizeof(cloud_location.neighbor_cells.neighbor_cells));
 		}
 #if defined(CONFIG_LOCATION_METHOD_WIFI)
-		if (msg->module.location.data.cloud_location.wifi_access_points_valid) {
+		if (msg->module.location.data.cloud_location.wifi_access_points_valid)
+		{
 			BUILD_ASSERT(sizeof(cloud_location.wifi_access_points.ap_info) ==
-				     sizeof(msg->module.location.data.cloud_location
-					.wifi_access_points.ap_info));
+						 sizeof(msg->module.location.data.cloud_location
+									.wifi_access_points.ap_info));
 
 			cloud_location.wifi_access_points_valid = true;
 			cloud_location.wifi_access_points.ts =
@@ -1446,9 +1626,9 @@ static void on_all_states(struct data_msg_data *msg)
 			cloud_location.wifi_access_points.queued = true;
 
 			memcpy(&cloud_location.wifi_access_points.ap_info,
-			       &msg->module.location.data.cloud_location
-					.wifi_access_points.ap_info,
-			       sizeof(cloud_location.wifi_access_points.ap_info));
+				   &msg->module.location.data.cloud_location
+						.wifi_access_points.ap_info,
+				   sizeof(cloud_location.wifi_access_points.ap_info));
 
 			cloud_location.wifi_access_points.cnt =
 				msg->module.location.data.cloud_location.wifi_access_points.cnt;
@@ -1460,7 +1640,8 @@ static void on_all_states(struct data_msg_data *msg)
 		requested_data_status_set(APP_DATA_LOCATION);
 	}
 
-	if (IS_EVENT(msg, location, LOCATION_MODULE_EVT_TIMEOUT)) {
+	if (IS_EVENT(msg, location, LOCATION_MODULE_EVT_TIMEOUT))
+	{
 		requested_data_status_set(APP_DATA_LOCATION);
 	}
 }
@@ -1468,12 +1649,13 @@ static void on_all_states(struct data_msg_data *msg)
 static void module_thread_fn(void)
 {
 	int err;
-	struct data_msg_data msg = { 0 };
+	struct data_msg_data msg = {0};
 
 	self.thread_id = k_current_get();
 
 	err = module_start(&self);
-	if (err) {
+	if (err)
+	{
 		LOG_ERR("Failed starting module, error: %d", err);
 		SEND_ERROR(data, DATA_EVT_ERROR, err);
 	}
@@ -1483,15 +1665,18 @@ static void module_thread_fn(void)
 	k_work_init_delayable(&data_send_work, data_send_work_fn);
 
 	err = setup();
-	if (err) {
+	if (err)
+	{
 		LOG_ERR("setup, error: %d", err);
 		SEND_ERROR(data, DATA_EVT_ERROR, err);
 	}
 
-	while (true) {
+	while (true)
+	{
 		module_get_next_msg(&self, &msg);
 
-		switch (state) {
+		switch (state)
+		{
 		case STATE_CLOUD_DISCONNECTED:
 			on_cloud_state_disconnected(&msg);
 			break;
@@ -1511,8 +1696,8 @@ static void module_thread_fn(void)
 }
 
 K_THREAD_DEFINE(data_module_thread, CONFIG_DATA_THREAD_STACK_SIZE,
-		module_thread_fn, NULL, NULL, NULL,
-		K_LOWEST_APPLICATION_THREAD_PRIO, 0, 0);
+				module_thread_fn, NULL, NULL, NULL,
+				K_LOWEST_APPLICATION_THREAD_PRIO, 0, 0);
 
 APP_EVENT_LISTENER(MODULE, app_event_handler);
 APP_EVENT_SUBSCRIBE(MODULE, app_module_event);
