@@ -8,6 +8,7 @@
 #include <app_event_manager.h>
 #include <zephyr/settings/settings.h>
 #include <date_time.h>
+#include <math.h>
 #if defined(CONFIG_DATA_GRANT_SEND_ON_CONNECTION_QUALITY)
 #include <modem/lte_lc.h>
 #endif
@@ -39,6 +40,10 @@ LOG_MODULE_REGISTER(MODULE, CONFIG_DATA_MODULE_LOG_LEVEL);
 
 #define DEVICE_SETTINGS_KEY "data_module"
 #define DEVICE_SETTINGS_CONFIG_KEY "config"
+
+///< @todo Add to Kconfig or implement differently for general usage.
+#define DATA_MODULE_ENVIRONMENTAL_DATA_ROUNDING_NUM 2
+#define DATA_MODULE_FORMAT_MULTIPLIER 100
 
 struct data_msg_data
 {
@@ -279,6 +284,20 @@ static bool app_event_handler(const struct app_event_header *aeh)
 	}
 
 	return false;
+}
+
+/**
+ * @brief Rounds a double number to the specified number of decimal places.
+ *
+ * @param num The input double number to be rounded.
+ * @param n The number of decimal places to round to.
+ *
+ * @return The rounded double number.
+ */
+static double round_to_n_decimal_places(double num, int n)
+{
+	double factor = pow(10, n);
+	return round(num * factor) / factor;
 }
 
 static bool grant_send(enum coneval_supported_data_type type,
@@ -1528,9 +1547,9 @@ static void on_all_states(struct data_msg_data *msg)
 	if (IS_EVENT(msg, sensor, SENSOR_EVT_ENVIRONMENTAL_DATA_READY))
 	{
 		struct cloud_data_sensors new_sensor_data = {
-			.temperature = msg->module.sensor.data.sensors.temperature,
-			.humidity = msg->module.sensor.data.sensors.humidity,
-			.pressure = msg->module.sensor.data.sensors.pressure,
+			.temperature = DATA_MODULE_FORMAT_MULTIPLIER * round_to_n_decimal_places(msg->module.sensor.data.sensors.temperature, DATA_MODULE_ENVIRONMENTAL_DATA_ROUNDING_NUM),
+			.humidity = DATA_MODULE_FORMAT_MULTIPLIER * round_to_n_decimal_places(msg->module.sensor.data.sensors.humidity, DATA_MODULE_ENVIRONMENTAL_DATA_ROUNDING_NUM),
+			.pressure = DATA_MODULE_FORMAT_MULTIPLIER * round_to_n_decimal_places(msg->module.sensor.data.sensors.pressure, DATA_MODULE_ENVIRONMENTAL_DATA_ROUNDING_NUM),
 			.bsec_air_quality = msg->module.sensor.data.sensors.bsec_air_quality,
 			.env_ts = msg->module.sensor.data.sensors.timestamp,
 			.queued = true};
