@@ -157,38 +157,6 @@ static void ext_sensor_handler(const struct ext_sensor_evt *const evt)
 }
 #endif /* CONFIG_EXTERNAL_SENSORS */
 
-// static void accelerometer_data_get(void)
-// {
-// 	struct ai_module_event *ai_module_event;
-
-// #if defined(CONFIG_ADP536X)
-// 	int err;
-// 	uint8_t percentage;
-
-// 	err = adp536x_fg_soc(&percentage);
-// 	if (err)
-// 	{
-// 		LOG_ERR("Failed to get battery level: %d", err);
-// 		return;
-// 	}
-
-// 	ai_module_event = new_ai_module_event();
-
-// 	__ASSERT(ai_module_event, "Not enough heap left to allocate event");
-
-// 	ai_module_event->data.bat.timestamp = k_uptime_get();
-// 	ai_module_event->data.bat.battery_level = percentage;
-// 	ai_module_event->type = SENSOR_EVT_FUEL_GAUGE_READY;
-// #else
-// 	ai_module_event = new_ai_module_event();
-
-// 	__ASSERT(ai_module_event, "Not enough heap left to allocate event");
-
-// 	ai_module_event->type = SENSOR_EVT_FUEL_GAUGE_NOT_SUPPORTED;
-// #endif
-// 	APP_EVENT_SUBMIT(ai_module_event);
-// }
-
 static void ai_analysis_result_data_get(void)
 {
 	struct ai_module_event *ai_module_event;
@@ -277,31 +245,14 @@ static bool ai_analysis_result_data_requested(enum app_module_data_type *data_li
 /* Message handler for STATE_INIT. */
 static void on_state_init(struct ai_msg_data *msg)
 {
-	// if (IS_EVENT(msg, data, DATA_EVT_CONFIG_INIT)) {
-	// 	apply_config(msg);
-	// 	state_set(STATE_RUNNING);
-	// }
 	state_set(STATE_RUNNING);
 }
 
 /* Message handler for STATE_RUNNING. */
 static void on_state_running(struct ai_msg_data *msg)
 {
-	// if (IS_EVENT(msg, data, DATA_EVT_CONFIG_READY)) {
-	// 	apply_config(msg);
-	// }
-
 	if (IS_EVENT(msg, app, APP_EVT_DATA_GET))
 	{
-		// if (environmental_data_requested(msg->module.app.data_list,
-		// 				 msg->module.app.count)) {
-		// 	environmental_data_get();
-		// }
-
-		// if (battery_data_requested(msg->module.app.data_list, msg->module.app.count)) {
-		// 	battery_data_get();
-		// }
-
 		if (ai_analysis_result_data_requested(msg->module.app.data_list, msg->module.app.count))
 		{
 			ai_analysis_result_data_get();
