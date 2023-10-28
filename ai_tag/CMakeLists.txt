@@ -28,6 +28,8 @@ add_subdirectory_ifdef(CONFIG_CLOUD_MODULE src/cloud)
 add_subdirectory_ifdef(CONFIG_SENSOR_MODULE src/ext_sensors)
 add_subdirectory_ifdef(CONFIG_WATCHDOG_APPLICATION src/watchdog)
 
+add_subdirectory_ifdef(CONFIG_AI_MODULE src/ai)
+
 # Include nRF modem library header file for PC builds.
 # These are used throughout the application in type definitions.
 if (CONFIG_BOARD_QEMU_X86 OR CONFIG_BOARD_NATIVE_POSIX)

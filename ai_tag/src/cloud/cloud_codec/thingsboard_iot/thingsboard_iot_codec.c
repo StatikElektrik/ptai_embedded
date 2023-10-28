@@ -289,7 +289,8 @@ int cloud_codec_encode_data(struct cloud_codec_data *output,
 							struct cloud_data_modem_dynamic *modem_dyn_buf,
 							struct cloud_data_ui *ui_buf,
 							struct cloud_data_impact *impact_buf,
-							struct cloud_data_battery *bat_buf)
+							struct cloud_data_battery *bat_buf,
+							struct cloud_data_ai_analysis_result *ai_buf)
 {
 	int err;
 	char *buffer;
@@ -384,6 +385,19 @@ int cloud_codec_encode_data(struct cloud_codec_data *output,
 	err = json_common_battery_data_add(root_obj, bat_buf,
 									   JSON_COMMON_ADD_DATA_TO_OBJECT,
 									   DATA_BATTERY,
+									   NULL);
+	if (err == 0)
+	{
+		object_added = true;
+	}
+	else if (err != -ENODATA)
+	{
+		goto exit;
+	}
+
+	err = json_common_ai_results_data_add(root_obj, ai_buf,
+									   JSON_COMMON_ADD_DATA_TO_OBJECT,
+									   DATA_AI_RESULTS,
 									   NULL);
 	if (err == 0)
 	{
@@ -528,13 +542,15 @@ int cloud_codec_encode_batch_data(struct cloud_codec_data *output,
 								  struct cloud_data_ui *ui_buf,
 								  struct cloud_data_impact *impact_buf,
 								  struct cloud_data_battery *bat_buf,
+								  struct cloud_data_ai_analysis_result *ai_buf,
 								  size_t gnss_buf_count,
 								  size_t sensor_buf_count,
 								  size_t modem_stat_buf_count,
 								  size_t modem_dyn_buf_count,
 								  size_t ui_buf_count,
 								  size_t impact_buf_count,
-								  size_t bat_buf_count)
+								  size_t bat_buf_count,
+								  size_t ai_buf_count)
 {
 	int err;
 	char *buffer;

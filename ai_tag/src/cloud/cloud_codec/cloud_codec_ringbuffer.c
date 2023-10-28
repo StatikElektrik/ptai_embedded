@@ -160,3 +160,29 @@ void cloud_codec_populate_modem_dynamic_buffer(
 	LOG_DBG("Entry: %d of %d in dynamic modem buffer filled",
 		*head_modem_buf, buffer_count - 1);
 }
+
+void cloud_codec_populate_ai_analysis_result_buffer(
+				struct cloud_data_ai_analysis_result *ai_buffer,
+				struct cloud_data_ai_analysis_result *new_ai_data,
+				int *head_modem_buf,
+				size_t buffer_count)
+{
+	if (!IS_ENABLED(CONFIG_DATA_AI_RESULTS_BUFFER_STORE)) {
+		return;
+	}
+
+	if (!new_ai_data->queued) {
+		return;
+	}
+
+	/* Go to start of buffer if end is reached. */
+	*head_modem_buf += 1;
+	if (*head_modem_buf == buffer_count) {
+		*head_modem_buf = 0;
+	}
+
+	ai_buffer[*head_modem_buf] = *new_ai_data;
+
+	LOG_DBG("Entry: %d of %d in ai analysis result buffer filled",
+		*head_modem_buf, buffer_count - 1);
+}

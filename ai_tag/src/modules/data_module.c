@@ -34,6 +34,7 @@
 #include "events/sensor_module_event.h"
 #include "events/ui_module_event.h"
 #include "events/util_module_event.h"
+#include "events/ai_module_event.h"
 
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(MODULE, CONFIG_DATA_MODULE_LOG_LEVEL);
@@ -57,6 +58,7 @@ struct data_msg_data
 		struct data_module_event data;
 		struct app_module_event app;
 		struct util_module_event util;
+		struct ai_module_event ai;
 	} module;
 };
 
@@ -78,6 +80,7 @@ static struct cloud_data_impact impact_buf[CONFIG_DATA_IMPACT_BUFFER_COUNT];
 static struct cloud_data_battery bat_buf[CONFIG_DATA_BATTERY_BUFFER_COUNT];
 static struct cloud_data_modem_dynamic modem_dyn_buf[CONFIG_DATA_MODEM_DYNAMIC_BUFFER_COUNT];
 static struct cloud_data_cloud_location cloud_location;
+static struct cloud_data_ai_analysis_result ai_results_buf[CONFIG_DATA_AI_RESULTS_BUFFER_COUNT];
 
 /* Static modem data does not change between firmware versions and does not
  * have to be buffered.
@@ -95,6 +98,7 @@ static int head_modem_dyn_buf;
 static int head_ui_buf;
 static int head_impact_buf;
 static int head_bat_buf;
+static int head_ai_result_buf;
 
 static K_SEM_DEFINE(config_load_sem, 0, 1);
 
@@ -269,6 +273,14 @@ static bool app_event_handler(const struct app_event_header *aeh)
 		struct util_module_event *event = cast_util_module_event(aeh);
 
 		msg.module.util = *event;
+		enqueue_msg = true;
+	}
+
+	if (is_ai_module_event(aeh))
+	{
+		struct ai_module_event *event = cast_ai_module_event(aeh);
+
+		msg.module.ai = *event;
 		enqueue_msg = true;
 	}
 
@@ -706,7 +718,8 @@ static void data_encode(void)
 									  &modem_dyn_buf[head_modem_dyn_buf],
 									  &ui_buf[head_ui_buf],
 									  &impact_buf[head_impact_buf],
-									  &bat_buf[head_bat_buf]);
+									  &bat_buf[head_bat_buf],
+									  &ai_results_buf[head_ai_result_buf]);
 		switch (err)
 		{
 		case 0:
@@ -739,13 +752,15 @@ static void data_encode(void)
 											ui_buf,
 											impact_buf,
 											bat_buf,
+											ai_results_buf,
 											ARRAY_SIZE(gnss_buf),
 											ARRAY_SIZE(sensors_buf),
 											MODEM_STATIC_ARRAY_SIZE,
 											ARRAY_SIZE(modem_dyn_buf),
 											ARRAY_SIZE(ui_buf),
 											ARRAY_SIZE(impact_buf),
-											ARRAY_SIZE(bat_buf));
+											ARRAY_SIZE(bat_buf),
+											ARRAY_SIZE(ai_results_buf));
 		switch (err)
 		{
 		case 0:
@@ -1663,6 +1678,29 @@ static void on_all_states(struct data_msg_data *msg)
 	{
 		requested_data_status_set(APP_DATA_LOCATION);
 	}
+
+	if (IS_EVENT(msg, ai, AI_MODULE_EVT_ANALYSIS_RESULT_READY))
+	{
+		struct cloud_data_ai_analysis_result new_ai_data = {
+			.error_type_1 = DATA_MODULE_FORMAT_MULTIPLIER * round_to_n_decimal_places(msg->module.ai.data.results.error_type_1, DATA_MODULE_ENVIRONMENTAL_DATA_ROUNDING_NUM),
+			.error_type_2 = DATA_MODULE_FORMAT_MULTIPLIER * round_to_n_decimal_places(msg->module.ai.data.results.error_type_2, DATA_MODULE_ENVIRONMENTAL_DATA_ROUNDING_NUM),
+			.error_type_3 = DATA_MODULE_FORMAT_MULTIPLIER * round_to_n_decimal_places(msg->module.ai.data.results.error_type_3, DATA_MODULE_ENVIRONMENTAL_DATA_ROUNDING_NUM),
+			.error_type_4 = DATA_MODULE_FORMAT_MULTIPLIER * round_to_n_decimal_places(msg->module.ai.data.results.error_type_4, DATA_MODULE_ENVIRONMENTAL_DATA_ROUNDING_NUM),
+			.ai_ts = msg->module.ai.data.results.timestamp,
+			.queued = true};
+
+		cloud_codec_populate_ai_analysis_result_buffer(ai_results_buf,
+										   &new_ai_data,
+										   &head_ai_result_buf,
+										   ARRAY_SIZE(ai_results_buf));
+
+		requested_data_status_set(APP_DATA_AI_RESULT);
+	}
+
+	if (IS_EVENT(msg, ai, AI_MODULE_EVT_ANAYLSIS_NOT_SUPPORTED))
+	{
+		requested_data_status_set(APP_DATA_AI_RESULT);
+	}
 }
 
 static void module_thread_fn(void)
@@ -1727,3 +1765,4 @@ APP_EVENT_SUBSCRIBE_EARLY(MODULE, cloud_module_event);
 APP_EVENT_SUBSCRIBE_EARLY(MODULE, location_module_event);
 APP_EVENT_SUBSCRIBE_EARLY(MODULE, ui_module_event);
 APP_EVENT_SUBSCRIBE_EARLY(MODULE, sensor_module_event);
+APP_EVENT_SUBSCRIBE_EARLY(MODULE, ai_module_event);
