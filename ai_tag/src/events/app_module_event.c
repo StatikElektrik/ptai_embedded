@@ -24,6 +24,8 @@ static char *type2str(enum app_module_data_type type)
 		return "BAT";
 	case APP_DATA_LOCATION:
 		return "LOCATION";
+	case APP_DATA_AI_RESULT:
+		return "AI_RESULT";
 	default:
 		return "Unknown type";
 	}

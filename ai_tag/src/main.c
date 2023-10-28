@@ -371,6 +371,7 @@ static void data_get(void)
 	app_module_event->data_list[count++] = APP_DATA_MODEM_DYNAMIC;
 	app_module_event->data_list[count++] = APP_DATA_BATTERY;
 	app_module_event->data_list[count++] = APP_DATA_ENVIRONMENTAL;
+	app_module_event->data_list[count++] = APP_DATA_AI_RESULT;
 
 	if (!modem_static_sampled) {
 		app_module_event->data_list[count++] = APP_DATA_MODEM_STATIC;
@@ -495,6 +496,7 @@ static void on_all_events(struct app_msg_data *msg)
 		sample_request_ongoing = false;
 	}
 
+	///< @todo Yusuf - Remove this.
 	if (IS_EVENT(msg, sensor, SENSOR_EVT_MOVEMENT_IMPACT_DETECTED)) {
 		SEND_EVENT(app, APP_EVT_DATA_GET_ALL);
 	}

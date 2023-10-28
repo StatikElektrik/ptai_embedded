@@ -26,6 +26,10 @@ config SENSOR_EVENTS_LOG
 	bool "Enable logging for sensor module events"
 	default y
 
+config AI_EVENTS_LOG
+	bool "Enable logging for ai module events"
+	default y
+
 config UI_EVENTS_LOG
 	bool "Enable logging for UI module events"
 	default y

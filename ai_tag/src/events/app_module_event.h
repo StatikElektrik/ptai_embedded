@@ -69,8 +69,8 @@ enum app_module_data_type {
 	APP_DATA_MODEM_DYNAMIC,
 	APP_DATA_BATTERY,
 	APP_DATA_LOCATION,
-
-	APP_DATA_COUNT,
+	APP_DATA_AI_RESULT,
+	APP_DATA_COUNT
 };
 
 /** @brief Application module event. */

@@ -1006,6 +1006,7 @@ exit:
 	return err;
 }
 
+
 int json_common_config_add(cJSON *parent, struct cloud_data_cfg *data, const char *object_label)
 {
 	int err;
@@ -1127,6 +1128,82 @@ int json_common_config_add(cJSON *parent, struct cloud_data_cfg *data, const cha
 
 exit:
 	cJSON_Delete(config_obj);
+	return err;
+}
+
+
+int json_common_ai_results_data_add(cJSON *parent,
+				struct cloud_data_ai_analysis_result *data,
+				enum json_common_op_code op,
+				const char *object_label,
+				cJSON **parent_ref)
+{
+	int err;
+
+	if (!data->queued) {
+		return -ENODATA;
+	}
+
+	err = date_time_uptime_to_unix_time_ms(&data->ai_ts);
+	if (err) {
+		LOG_ERR("date_time_uptime_to_unix_time_ms, error: %d", err);
+		return err;
+	}
+
+	cJSON *ai_results_obj = cJSON_CreateObject();
+	cJSON *ai_result_obj = cJSON_CreateObject();
+
+	if (ai_results_obj == NULL || ai_result_obj == NULL) {
+		err = -ENOMEM;
+		goto exit;
+	}
+
+	err = json_add_number(ai_result_obj, DATA_AI_RESULTS_ERROR_T1, data->error_type_1);
+	if (err) {
+		LOG_ERR("Encoding error: %d returned at %s:%d", err, __FILE__, __LINE__);
+		goto exit;
+	}
+
+	err = json_add_number(ai_result_obj, DATA_AI_RESULTS_ERROR_T2, data->error_type_2);
+	if (err) {
+		LOG_ERR("Encoding error: %d returned at %s:%d", err, __FILE__, __LINE__);
+		goto exit;
+	}
+
+	err = json_add_number(ai_result_obj, DATA_AI_RESULTS_ERROR_T3, data->error_type_3);
+	if (err) {
+		LOG_ERR("Encoding error: %d returned at %s:%d", err, __FILE__, __LINE__);
+		goto exit;
+	}
+
+	err = json_add_number(ai_result_obj, DATA_AI_RESULTS_ERROR_T4, data->error_type_4);
+	if (err) {
+		LOG_ERR("Encoding error: %d returned at %s:%d", err, __FILE__, __LINE__);
+		goto exit;
+	}
+
+	json_add_obj(ai_results_obj, DATA_VALUE, ai_result_obj);
+
+	err = json_add_number(ai_results_obj, DATA_TIMESTAMP, data->ai_ts);
+	if (err) {
+		LOG_ERR("Encoding error: %d returned at %s:%d", err, __FILE__, __LINE__);
+		cJSON_Delete(ai_results_obj);
+		return err;
+	}
+
+	err = op_code_handle(parent, op, object_label, ai_results_obj, parent_ref);
+	if (err) {
+		cJSON_Delete(ai_results_obj);
+		return err;
+	}
+
+	data->queued = false;
+
+	return 0;
+
+exit:
+	cJSON_Delete(ai_results_obj);
+	cJSON_Delete(ai_result_obj);
 	return err;
 }
 

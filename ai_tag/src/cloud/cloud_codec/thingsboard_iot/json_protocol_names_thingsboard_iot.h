@@ -45,6 +45,11 @@
 #define DATA_CONFIG	    "cfg"
 #define DATA_VERSION	    "version"
 #define DATA_IMPACT	    "impact"
+#define DATA_AI_RESULTS	    "ai"
+#define DATA_AI_RESULTS_ERROR_T1	    "e1"
+#define DATA_AI_RESULTS_ERROR_T2	    "e2"
+#define DATA_AI_RESULTS_ERROR_T3	    "e3"
+#define DATA_AI_RESULTS_ERROR_T4	    "e4"
 
 #define DATA_MOVEMENT   "acc"
 #define DATA_MOVEMENT_X "x"
