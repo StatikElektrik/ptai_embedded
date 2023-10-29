@@ -368,7 +368,7 @@ static void data_get(void)
 	app_module_event->timeout = DATA_FETCH_TIMEOUT_DEFAULT;
 
 	/* Specify which data that is to be included in the transmission. */
-	app_module_event->data_list[count++] = APP_DATA_MODEM_DYNAMIC;
+	// app_module_event->data_list[count++] = APP_DATA_MODEM_DYNAMIC;
 	app_module_event->data_list[count++] = APP_DATA_BATTERY;
 	app_module_event->data_list[count++] = APP_DATA_ENVIRONMENTAL;
 	app_module_event->data_list[count++] = APP_DATA_AI_RESULT;
