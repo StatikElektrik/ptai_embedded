@@ -1691,9 +1691,9 @@ static void on_all_states(struct data_msg_data *msg)
 			.queued = true};
 
 		cloud_codec_populate_ai_analysis_result_buffer(ai_results_buf,
-										   &new_ai_data,
-										   &head_ai_result_buf,
-										   ARRAY_SIZE(ai_results_buf));
+													   &new_ai_data,
+													   &head_ai_result_buf,
+													   ARRAY_SIZE(ai_results_buf));
 
 		requested_data_status_set(APP_DATA_AI_RESULT);
 	}
