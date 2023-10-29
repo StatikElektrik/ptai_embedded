@@ -56,10 +56,10 @@ int ai_module_analyse_acc_data_dummy(struct ai_analysis_error_types *p_error_typ
 {
     static struct ai_analysis_error_types error_types_s = {0};
 
-    error_types_s.error_type_1 += get_random_value_range(1, 10);
+    error_types_s.error_type_1 += get_random_value_range(1, 3);
     error_types_s.error_type_2 += get_random_value_range(1, 2);
     error_types_s.error_type_3 += get_random_value_range(0, 1);
-    error_types_s.error_type_4 += get_random_value_range(1, 50);
+    error_types_s.error_type_4 += get_random_value_range(1, 5);
 
     *p_error_types = error_types_s;
     return 0;
