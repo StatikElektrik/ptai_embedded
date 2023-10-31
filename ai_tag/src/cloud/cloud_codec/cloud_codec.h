@@ -289,10 +289,10 @@ struct cloud_data_ai_analysis_result {
 	/** AI analysis result timestamp. UNIX milliseconds. */
 	int64_t ai_ts;
 	/** Error types in percentages. */
-	double error_type_1;
-	double error_type_2;
-	double error_type_3;
-	double error_type_4;
+	uint16_t normal_mode;
+	uint16_t prs_red_intake_manifold;
+	uint16_t comp_rat_red_cylinder;
+	uint16_t fuel_inject_red_cylinder;
 	/** Flag signifying that the data entry is to be encoded. */
 	bool queued : 1;
 };

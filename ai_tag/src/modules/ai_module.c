@@ -245,10 +245,10 @@ static void ai_analysis_result_data_get(void)
 	__ASSERT(ai_module_event, "Not enough heap left to allocate event");
 
 	ai_module_event->data.results.timestamp = k_uptime_get();
-	ai_module_event->data.results.error_type_1 = error_types.error_type_1;
-	ai_module_event->data.results.error_type_2 = error_types.error_type_2;
-	ai_module_event->data.results.error_type_3 = error_types.error_type_3;
-	ai_module_event->data.results.error_type_4 = error_types.error_type_4;
+	ai_module_event->data.results.normal_mode = error_types.normal_mode;
+	ai_module_event->data.results.prs_red_intake_manifold = error_types.prs_red_intake_manifold;
+	ai_module_event->data.results.comp_rat_red_cylinder = error_types.comp_rat_red_cylinder;
+	ai_module_event->data.results.fuel_inject_red_cylinder = error_types.fuel_inject_red_cylinder;
 	ai_module_event->type = AI_MODULE_EVT_ANALYSIS_RESULT_READY;
 #else
 
