@@ -56,10 +56,10 @@ int ai_module_analyse_acc_data_dummy(struct ai_analysis_error_types *p_error_typ
 {
     static struct ai_analysis_error_types error_types_s = {0};
 
-    error_types_s.error_type_1 += get_random_value_range(1, 3);
-    error_types_s.error_type_2 += get_random_value_range(1, 2);
-    error_types_s.error_type_3 += get_random_value_range(0, 1);
-    error_types_s.error_type_4 += get_random_value_range(1, 5);
+    error_types_s.normal_mode += get_random_value_range(0.1, 0.2);
+    error_types_s.prs_red_intake_manifold += get_random_value_range(0.01, 0.5);
+    error_types_s.comp_rat_red_cylinder += get_random_value_range(0.001, 0.02);
+    error_types_s.fuel_inject_red_cylinder += get_random_value_range(0.1, 1);
 
     *p_error_types = error_types_s;
     return 0;
