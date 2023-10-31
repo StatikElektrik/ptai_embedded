@@ -1683,10 +1683,10 @@ static void on_all_states(struct data_msg_data *msg)
 	if (IS_EVENT(msg, ai, AI_MODULE_EVT_ANALYSIS_RESULT_READY))
 	{
 		struct cloud_data_ai_analysis_result new_ai_data = {
-			.error_type_1 = DATA_MODULE_FORMAT_MULTIPLIER * round_to_n_decimal_places(msg->module.ai.data.results.error_type_1, DATA_MODULE_ENVIRONMENTAL_DATA_ROUNDING_NUM),
-			.error_type_2 = DATA_MODULE_FORMAT_MULTIPLIER * round_to_n_decimal_places(msg->module.ai.data.results.error_type_2, DATA_MODULE_ENVIRONMENTAL_DATA_ROUNDING_NUM),
-			.error_type_3 = DATA_MODULE_FORMAT_MULTIPLIER * round_to_n_decimal_places(msg->module.ai.data.results.error_type_3, DATA_MODULE_ENVIRONMENTAL_DATA_ROUNDING_NUM),
-			.error_type_4 = DATA_MODULE_FORMAT_MULTIPLIER * round_to_n_decimal_places(msg->module.ai.data.results.error_type_4, DATA_MODULE_ENVIRONMENTAL_DATA_ROUNDING_NUM),
+			.normal_mode = (uint16_t)(DATA_MODULE_FORMAT_MULTIPLIER * round_to_n_decimal_places(msg->module.ai.data.results.normal_mode, DATA_MODULE_ENVIRONMENTAL_DATA_ROUNDING_NUM)),
+			.prs_red_intake_manifold = (uint16_t)(DATA_MODULE_FORMAT_MULTIPLIER * round_to_n_decimal_places(msg->module.ai.data.results.prs_red_intake_manifold, DATA_MODULE_ENVIRONMENTAL_DATA_ROUNDING_NUM)),
+			.comp_rat_red_cylinder = (uint16_t)(DATA_MODULE_FORMAT_MULTIPLIER * round_to_n_decimal_places(msg->module.ai.data.results.comp_rat_red_cylinder, DATA_MODULE_ENVIRONMENTAL_DATA_ROUNDING_NUM)),
+			.fuel_inject_red_cylinder = (uint16_t)(DATA_MODULE_FORMAT_MULTIPLIER * round_to_n_decimal_places(msg->module.ai.data.results.fuel_inject_red_cylinder, DATA_MODULE_ENVIRONMENTAL_DATA_ROUNDING_NUM)),
 			.ai_ts = msg->module.ai.data.results.timestamp,
 			.queued = true};
 

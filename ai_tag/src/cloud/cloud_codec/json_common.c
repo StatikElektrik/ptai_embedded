@@ -1141,25 +1141,25 @@ int json_common_ai_results_data_add(cJSON *parent,
 		goto exit;
 	}
 
-	err = json_add_number(ai_results_obj, DATA_AI_RESULTS_ERROR_T1, data->error_type_1);
+	err = json_add_number(ai_results_obj, DATA_AI_RESULTS_NORMAL_MODE, data->normal_mode);
 	if (err) {
 		LOG_ERR("Encoding error: %d returned at %s:%d", err, __FILE__, __LINE__);
 		goto exit;
 	}
 
-	err = json_add_number(ai_results_obj, DATA_AI_RESULTS_ERROR_T2, data->error_type_2);
+	err = json_add_number(ai_results_obj, DATA_AI_RESULTS_E_PRESSURE_REDUCTION_INTAKE_MANIFOLD, data->prs_red_intake_manifold);
 	if (err) {
 		LOG_ERR("Encoding error: %d returned at %s:%d", err, __FILE__, __LINE__);
 		goto exit;
 	}
 
-	err = json_add_number(ai_results_obj, DATA_AI_RESULTS_ERROR_T3, data->error_type_3);
+	err = json_add_number(ai_results_obj, DATA_AI_RESULTS_E_COMP_RAT_REDUCTION_CYLINDERS, data->comp_rat_red_cylinder);
 	if (err) {
 		LOG_ERR("Encoding error: %d returned at %s:%d", err, __FILE__, __LINE__);
 		goto exit;
 	}
 
-	err = json_add_number(ai_results_obj, DATA_AI_RESULTS_ERROR_T4, data->error_type_4);
+	err = json_add_number(ai_results_obj, DATA_AI_RESULTS_E_REDUCTION_AMOUNT_FUEL_INJECT_CYLINDERS_T4, data->fuel_inject_red_cylinder);
 	if (err) {
 		LOG_ERR("Encoding error: %d returned at %s:%d", err, __FILE__, __LINE__);
 		goto exit;

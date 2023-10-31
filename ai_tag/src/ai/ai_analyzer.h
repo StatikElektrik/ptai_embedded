@@ -36,10 +36,10 @@ extern "C" {
  */
 struct ai_analysis_error_types
 {
-	double error_type_1;
-	double error_type_2;
-	double error_type_3;
-	double error_type_4;
+	double normal_mode;
+	double prs_red_intake_manifold;
+	double comp_rat_red_cylinder;
+	double fuel_inject_red_cylinder;
 };
 /***********************************************************************************************************************
  * Public Function Prototypes
