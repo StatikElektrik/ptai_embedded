@@ -28,6 +28,7 @@
 #include "events/location_module_event.h"
 #include "events/modem_module_event.h"
 #include "events/ui_module_event.h"
+#include "events/ai_module_event.h"
 #include "events/debug_module_event.h"
 
 #include <zephyr/logging/log.h>
@@ -43,6 +44,7 @@ struct debug_msg_data {
 		struct app_module_event app;
 		struct location_module_event location;
 		struct modem_module_event modem;
+		struct ai_module_event ai;
 	} module;
 };
 
@@ -193,6 +195,15 @@ static bool app_event_handler(const struct app_event_header *aeh)
 		struct util_module_event *event = cast_util_module_event(aeh);
 		struct debug_msg_data debug_msg = {
 			.module.util = *event
+		};
+
+		message_handler(&debug_msg);
+	}
+
+	if (is_ai_module_event(aeh)) {
+		struct ai_module_event *event = cast_ai_module_event(aeh);
+		struct debug_msg_data debug_msg = {
+			.module.ai = *event
 		};
 
 		message_handler(&debug_msg);
@@ -397,3 +408,4 @@ APP_EVENT_SUBSCRIBE_EARLY(MODULE, ui_module_event);
 APP_EVENT_SUBSCRIBE_EARLY(MODULE, sensor_module_event);
 APP_EVENT_SUBSCRIBE_EARLY(MODULE, data_module_event);
 APP_EVENT_SUBSCRIBE_EARLY(MODULE, util_module_event);
+APP_EVENT_SUBSCRIBE_EARLY(MODULE, ai_module_event);

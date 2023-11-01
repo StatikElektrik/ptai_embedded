@@ -135,8 +135,6 @@ static bool coap_handler_is_dns_resolved()
  */
 static void coap_handler_connection_state_set(enum connection_state new_state)
 {
-    bool notify_error = false;
-
     if (g_connection_state == new_state)
     {
         LOG_DBG("Skipping transition to the same state (%s)",

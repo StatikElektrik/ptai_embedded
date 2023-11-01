@@ -276,13 +276,25 @@ struct cloud_data_pgps_request {
 enum cloud_codec_event_type {
 	/** Only used in LwM2M codec. This event carries a config update. */
 	CLOUD_CODEC_EVT_CONFIG_UPDATE = 1,
-};
 
+};
 struct cloud_codec_evt {
 	/** Cloud codec event type. */
 	enum cloud_codec_event_type type;
 	/** New config data. */
 	struct cloud_data_cfg config_update;
+};
+
+struct cloud_data_ai_analysis_result {
+	/** AI analysis result timestamp. UNIX milliseconds. */
+	int64_t ai_ts;
+	/** Error types in percentages. */
+	uint16_t normal_mode;
+	uint16_t prs_red_intake_manifold;
+	uint16_t comp_rat_red_cylinder;
+	uint16_t fuel_inject_red_cylinder;
+	/** Flag signifying that the data entry is to be encoded. */
+	bool queued : 1;
 };
 
 /**
@@ -400,6 +412,7 @@ int cloud_codec_encode_config(struct cloud_codec_data *output,
  * @param[in] ui_buf Button data.
  * @param[in] impact_buf Impact data.
  * @param[in] bat_buf Battery data.
+ * @param[in] ai_buf AI analysis result data.
  *
  * @retval 0 on success.
  * @retval -ENODATA if none of the data elements are marked valid.
@@ -414,7 +427,8 @@ int cloud_codec_encode_data(struct cloud_codec_data *output,
 			    struct cloud_data_modem_dynamic *modem_dyn_buf,
 			    struct cloud_data_ui *ui_buf,
 			    struct cloud_data_impact *impact_buf,
-			    struct cloud_data_battery *bat_buf);
+			    struct cloud_data_battery *bat_buf,
+				struct cloud_data_ai_analysis_result *ai_buf);
 
 /**
  * @brief Encode UI data.
@@ -478,13 +492,15 @@ int cloud_codec_encode_batch_data(struct cloud_codec_data *output,
 				  struct cloud_data_ui *ui_buf,
 				  struct cloud_data_impact *impact_buf,
 				  struct cloud_data_battery *bat_buf,
+				  struct cloud_data_ai_analysis_result *ai_buf,
 				  size_t gnss_buf_count,
 				  size_t sensor_buf_count,
 				  size_t modem_stat_buf_count,
 				  size_t modem_dyn_buf_count,
 				  size_t ui_buf_count,
 				  size_t impact_buf_count,
-				  size_t bat_buf_count);
+				  size_t bat_buf_count,
+				  size_t ai_buf_count);
 
 void cloud_codec_populate_sensor_buffer(
 				struct cloud_data_sensors *sensor_buffer,
@@ -516,6 +532,12 @@ void cloud_codec_populate_gnss_buffer(struct cloud_data_gnss *gnss_buffer,
 void cloud_codec_populate_modem_dynamic_buffer(
 				struct cloud_data_modem_dynamic *modem_buffer,
 				struct cloud_data_modem_dynamic *new_modem_data,
+				int *head_modem_buf,
+				size_t buffer_count);
+
+void cloud_codec_populate_ai_analysis_result_buffer(
+				struct cloud_data_ai_analysis_result *modem_buffer,
+				struct cloud_data_ai_analysis_result *new_modem_data,
 				int *head_modem_buf,
 				size_t buffer_count);
 

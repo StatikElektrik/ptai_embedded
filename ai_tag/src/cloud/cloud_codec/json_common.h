@@ -277,6 +277,27 @@ int json_common_battery_data_add(cJSON *parent,
 int json_common_config_add(cJSON *parent, struct cloud_data_cfg *data, const char *object_label);
 
 /**
+ * @brief Encode and add ai analysis results data to the parent object.
+ *
+ * @param[out] parent Pointer to object that the encoded data is added to.
+ * @param[in] data Pointer to data that is to be encoded.
+ * @param[in] op Operation that is to be carried out.
+ * @param[in] object_label Name of the encoded object.
+ * @param[out] parent_ref Reference to an unallocated parent object pointer. Used when getting the
+ *			  pointer to the encoded data object when setting
+ *			  JSON_COMMON_GET_POINTER_TO_OBJECT as the opcode. The cJSON object pointed
+ *			  to after this function call must be manually freed after use.
+ *
+ * @return 0 on success. -ENODATA if the passed in data is not valid. Otherwise a negative error
+ *         code is returned.
+ */
+int json_common_ai_results_data_add(cJSON *parent,
+				struct cloud_data_ai_analysis_result *data,
+				enum json_common_op_code op,
+				const char *object_label,
+				cJSON **parent_ref);
+
+/**
  * @brief Extract configuration values from parent object.
  *
  * @param[in] parent Pointer to object that the configuration is to be extracted from.
@@ -300,6 +321,7 @@ void json_common_config_get(cJSON *parent, struct cloud_data_cfg *data);
  */
 int json_common_batch_data_add(cJSON *parent, enum json_common_buffer_type type, void *buf,
 			       size_t buf_count, const char *object_label);
+
 
 #ifdef __cplusplus
 }

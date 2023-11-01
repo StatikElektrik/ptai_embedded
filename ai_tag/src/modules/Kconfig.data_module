@@ -64,6 +64,11 @@ config DATA_BATTERY_BUFFER_COUNT
 	range 1 100
 	default 3
 
+config DATA_AI_RESULTS_BUFFER_COUNT
+	int "Number of ai results data ringbuffer entries"
+	range 1 100
+	default 3
+
 config DATA_GNSS_BUFFER_STORE
 	bool "Store GNSS data received from the location module"
 	default y
@@ -82,6 +87,10 @@ config DATA_BATTERY_BUFFER_STORE
 
 config DATA_UI_BUFFER_STORE
 	bool "Store UI data received from the UI module"
+	default y
+
+config DATA_AI_RESULTS_BUFFER_STORE
+	bool "Store AI data received from the AI module"
 	default y
 
 choice DATA_DEVICE_MODE

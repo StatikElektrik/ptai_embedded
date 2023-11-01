@@ -77,44 +77,41 @@ int json_common_modem_static_data_add(cJSON *parent,
 	}
 
 	cJSON *modem_obj = cJSON_CreateObject();
-	cJSON *modem_val_obj = cJSON_CreateObject();
 
-	if (modem_obj == NULL || modem_val_obj == NULL) {
+	if (modem_obj == NULL) {
 		err = -ENOMEM;
 		goto exit;
 	}
 
-	err = json_add_str(modem_val_obj, MODEM_IMEI, data->imei);
+	err = json_add_str(modem_obj, MODEM_IMEI, data->imei);
 	if (err) {
 		LOG_ERR("Encoding error: %d returned at %s:%d", err, __FILE__, __LINE__);
 		goto exit;
 	}
 
-	err = json_add_str(modem_val_obj, MODEM_ICCID, data->iccid);
+	err = json_add_str(modem_obj, MODEM_ICCID, data->iccid);
 	if (err) {
 		LOG_ERR("Encoding error: %d returned at %s:%d", err, __FILE__, __LINE__);
 		goto exit;
 	}
 
-	err = json_add_str(modem_val_obj, MODEM_FIRMWARE_VERSION, data->fw);
+	err = json_add_str(modem_obj, MODEM_FIRMWARE_VERSION, data->fw);
 	if (err) {
 		LOG_ERR("Encoding error: %d returned at %s:%d", err, __FILE__, __LINE__);
 		goto exit;
 	}
 
-	err = json_add_str(modem_val_obj, MODEM_BOARD, data->brdv);
+	err = json_add_str(modem_obj, MODEM_BOARD, data->brdv);
 	if (err) {
 		LOG_ERR("Encoding error: %d returned at %s:%d", err, __FILE__, __LINE__);
 		goto exit;
 	}
 
-	err = json_add_str(modem_val_obj, MODEM_APP_VERSION, data->appv);
+	err = json_add_str(modem_obj, MODEM_APP_VERSION, data->appv);
 	if (err) {
 		LOG_ERR("Encoding error: %d returned at %s:%d", err, __FILE__, __LINE__);
 		goto exit;
 	}
-
-	json_add_obj(modem_obj, DATA_VALUE, modem_val_obj);
 
 	err = json_add_number(modem_obj, DATA_TIMESTAMP, data->ts);
 	if (err) {
@@ -135,7 +132,6 @@ int json_common_modem_static_data_add(cJSON *parent,
 
 exit:
 	cJSON_Delete(modem_obj);
-	cJSON_Delete(modem_val_obj);
 	return err;
 }
 
@@ -160,20 +156,19 @@ int json_common_modem_dynamic_data_add(cJSON *parent,
 	}
 
 	cJSON *modem_obj = cJSON_CreateObject();
-	cJSON *modem_val_obj = cJSON_CreateObject();
 
-	if (modem_obj == NULL || modem_val_obj == NULL) {
+	if (modem_obj == NULL) {
 		err = -ENOMEM;
 		goto exit;
 	}
 
-	err = json_add_number(modem_val_obj, MODEM_CURRENT_BAND, data->band);
+	err = json_add_number(modem_obj, MODEM_CURRENT_BAND, data->band);
 	if (err) {
 		LOG_ERR("Encoding error: %d returned at %s:%d", err, __FILE__, __LINE__);
 		goto exit;
 	}
 
-	err = json_add_str(modem_val_obj, MODEM_NETWORK_MODE,
+	err = json_add_str(modem_obj, MODEM_NETWORK_MODE,
 			   (data->nw_mode == LTE_LC_LTE_MODE_LTEM) ? "LTE-M" :
 			   (data->nw_mode == LTE_LC_LTE_MODE_NBIOT) ? "NB-IoT" : "Unknown");
 	if (err) {
@@ -181,13 +176,13 @@ int json_common_modem_dynamic_data_add(cJSON *parent,
 		goto exit;
 	}
 
-	err = json_add_number(modem_val_obj, MODEM_RSRP, data->rsrp);
+	err = json_add_number(modem_obj, MODEM_RSRP, data->rsrp);
 	if (err) {
 		LOG_ERR("Encoding error: %d returned at %s:%d", err, __FILE__, __LINE__);
 		goto exit;
 	}
 
-	err = json_add_number(modem_val_obj, MODEM_AREA_CODE, data->area);
+	err = json_add_number(modem_obj, MODEM_AREA_CODE, data->area);
 	if (err) {
 		LOG_ERR("Encoding error: %d returned at %s:%d", err, __FILE__, __LINE__);
 		goto exit;
@@ -203,25 +198,23 @@ int json_common_modem_dynamic_data_add(cJSON *parent,
 		goto exit;
 	}
 
-	err = json_add_number(modem_val_obj, MODEM_MCCMNC, mccmnc);
+	err = json_add_number(modem_obj, MODEM_MCCMNC, mccmnc);
 	if (err) {
 		LOG_ERR("Encoding error: %d returned at %s:%d", err, __FILE__, __LINE__);
 		goto exit;
 	}
 
-	err = json_add_number(modem_val_obj, MODEM_CELL_ID, data->cell);
+	err = json_add_number(modem_obj, MODEM_CELL_ID, data->cell);
 	if (err) {
 		LOG_ERR("Encoding error: %d returned at %s:%d", err, __FILE__, __LINE__);
 		goto exit;
 	}
 
-	err = json_add_str(modem_val_obj, MODEM_IP_ADDRESS, data->ip);
+	err = json_add_str(modem_obj, MODEM_IP_ADDRESS, data->ip);
 	if (err) {
 		LOG_ERR("Encoding error: %d returned at %s:%d", err, __FILE__, __LINE__);
 		goto exit;
 	}
-
-	json_add_obj(modem_obj, DATA_VALUE, modem_val_obj);
 
 	err = json_add_number(modem_obj, DATA_TIMESTAMP, data->ts);
 	if (err) {
@@ -242,7 +235,6 @@ int json_common_modem_dynamic_data_add(cJSON *parent,
 
 exit:
 	cJSON_Delete(modem_obj);
-	cJSON_Delete(modem_val_obj);
 	return err;
 }
 
@@ -265,26 +257,25 @@ int json_common_sensor_data_add(cJSON *parent,
 	}
 
 	cJSON *sensor_obj = cJSON_CreateObject();
-	cJSON *sensor_val_obj = cJSON_CreateObject();
 
-	if (sensor_obj == NULL || sensor_val_obj == NULL) {
+	if (sensor_obj == NULL) {
 		err = -ENOMEM;
 		goto exit;
 	}
 
-	err = json_add_number(sensor_val_obj, DATA_TEMPERATURE, data->temperature);
+	err = json_add_number(sensor_obj, DATA_TEMPERATURE, data->temperature);
 	if (err) {
 		LOG_ERR("Encoding error: %d returned at %s:%d", err, __FILE__, __LINE__);
 		goto exit;
 	}
 
-	err = json_add_number(sensor_val_obj, DATA_HUMIDITY, data->humidity);
+	err = json_add_number(sensor_obj, DATA_HUMIDITY, data->humidity);
 	if (err) {
 		LOG_ERR("Encoding error: %d returned at %s:%d", err, __FILE__, __LINE__);
 		goto exit;
 	}
 
-	err = json_add_number(sensor_val_obj, DATA_PRESSURE, data->pressure);
+	err = json_add_number(sensor_obj, DATA_PRESSURE, data->pressure);
 	if (err) {
 		LOG_ERR("Encoding error: %d returned at %s:%d", err, __FILE__, __LINE__);
 		goto exit;
@@ -292,14 +283,12 @@ int json_common_sensor_data_add(cJSON *parent,
 
 	/* If air quality is negative, the value is not provided. */
 	if (data->bsec_air_quality >= 0) {
-		err = json_add_number(sensor_val_obj, DATA_BSEC_IAQ, data->bsec_air_quality);
+		err = json_add_number(sensor_obj, DATA_BSEC_IAQ, data->bsec_air_quality);
 		if (err) {
 			LOG_ERR("Encoding error: %d returned at %s:%d", err, __FILE__, __LINE__);
 			goto exit;
 		}
 	}
-
-	json_add_obj(sensor_obj, DATA_VALUE, sensor_val_obj);
 
 	err = json_add_number(sensor_obj, DATA_TIMESTAMP, data->env_ts);
 	if (err) {
@@ -320,7 +309,6 @@ int json_common_sensor_data_add(cJSON *parent,
 
 exit:
 	cJSON_Delete(sensor_obj);
-	cJSON_Delete(sensor_val_obj);
 	return err;
 }
 
@@ -343,50 +331,47 @@ int json_common_gnss_data_add(cJSON *parent,
 	}
 
 	cJSON *gnss_obj = cJSON_CreateObject();
-	cJSON *gnss_val_obj = cJSON_CreateObject();
 
-	if (gnss_obj == NULL || gnss_val_obj == NULL) {
+	if (gnss_obj == NULL) {
 		err = -ENOMEM;
 		goto exit;
 	}
 
-	err = json_add_number(gnss_val_obj, DATA_GNSS_LONGITUDE, data->pvt.longi);
+	err = json_add_number(gnss_obj, DATA_GNSS_LONGITUDE, data->pvt.longi);
 	if (err) {
 		LOG_ERR("Encoding error: %d returned at %s:%d", err, __FILE__, __LINE__);
 		goto exit;
 	}
 
-	err = json_add_number(gnss_val_obj, DATA_GNSS_LATITUDE, data->pvt.lat);
+	err = json_add_number(gnss_obj, DATA_GNSS_LATITUDE, data->pvt.lat);
 	if (err) {
 		LOG_ERR("Encoding error: %d returned at %s:%d", err, __FILE__, __LINE__);
 		goto exit;
 	}
 
-	err = json_add_number(gnss_val_obj, DATA_GNSS_ACCURACY, data->pvt.acc);
+	err = json_add_number(gnss_obj, DATA_GNSS_ACCURACY, data->pvt.acc);
 	if (err) {
 		LOG_ERR("Encoding error: %d returned at %s:%d", err, __FILE__, __LINE__);
 		goto exit;
 	}
 
-	err = json_add_number(gnss_val_obj, DATA_GNSS_ALTITUDE, data->pvt.alt);
+	err = json_add_number(gnss_obj, DATA_GNSS_ALTITUDE, data->pvt.alt);
 	if (err) {
 		LOG_ERR("Encoding error: %d returned at %s:%d", err, __FILE__, __LINE__);
 		goto exit;
 	}
 
-	err = json_add_number(gnss_val_obj, DATA_GNSS_SPEED, data->pvt.spd);
+	err = json_add_number(gnss_obj, DATA_GNSS_SPEED, data->pvt.spd);
 	if (err) {
 		LOG_ERR("Encoding error: %d returned at %s:%d", err, __FILE__, __LINE__);
 		goto exit;
 	}
 
-	err = json_add_number(gnss_val_obj, DATA_GNSS_HEADING, data->pvt.hdg);
+	err = json_add_number(gnss_obj, DATA_GNSS_HEADING, data->pvt.hdg);
 	if (err) {
 		LOG_ERR("Encoding error: %d returned at %s:%d", err, __FILE__, __LINE__);
 		goto exit;
 	}
-
-	json_add_obj(gnss_obj, DATA_VALUE, gnss_val_obj);
 
 	err = json_add_number(gnss_obj, DATA_TIMESTAMP, data->gnss_ts);
 	if (err) {
@@ -407,7 +392,6 @@ int json_common_gnss_data_add(cJSON *parent,
 
 exit:
 	cJSON_Delete(gnss_obj);
-	cJSON_Delete(gnss_val_obj);
 	return err;
 }
 
@@ -1006,6 +990,7 @@ exit:
 	return err;
 }
 
+
 int json_common_config_add(cJSON *parent, struct cloud_data_cfg *data, const char *object_label)
 {
 	int err;
@@ -1127,6 +1112,78 @@ int json_common_config_add(cJSON *parent, struct cloud_data_cfg *data, const cha
 
 exit:
 	cJSON_Delete(config_obj);
+	return err;
+}
+
+
+int json_common_ai_results_data_add(cJSON *parent,
+				struct cloud_data_ai_analysis_result *data,
+				enum json_common_op_code op,
+				const char *object_label,
+				cJSON **parent_ref)
+{
+	int err;
+
+	if (!data->queued) {
+		return -ENODATA;
+	}
+
+	err = date_time_uptime_to_unix_time_ms(&data->ai_ts);
+	if (err) {
+		LOG_ERR("date_time_uptime_to_unix_time_ms, error: %d", err);
+		return err;
+	}
+
+	cJSON *ai_results_obj = cJSON_CreateObject();
+
+	if (ai_results_obj == NULL) {
+		err = -ENOMEM;
+		goto exit;
+	}
+
+	err = json_add_number(ai_results_obj, DATA_AI_RESULTS_NORMAL_MODE, data->normal_mode);
+	if (err) {
+		LOG_ERR("Encoding error: %d returned at %s:%d", err, __FILE__, __LINE__);
+		goto exit;
+	}
+
+	err = json_add_number(ai_results_obj, DATA_AI_RESULTS_E_PRESSURE_REDUCTION_INTAKE_MANIFOLD, data->prs_red_intake_manifold);
+	if (err) {
+		LOG_ERR("Encoding error: %d returned at %s:%d", err, __FILE__, __LINE__);
+		goto exit;
+	}
+
+	err = json_add_number(ai_results_obj, DATA_AI_RESULTS_E_COMP_RAT_REDUCTION_CYLINDERS, data->comp_rat_red_cylinder);
+	if (err) {
+		LOG_ERR("Encoding error: %d returned at %s:%d", err, __FILE__, __LINE__);
+		goto exit;
+	}
+
+	err = json_add_number(ai_results_obj, DATA_AI_RESULTS_E_REDUCTION_AMOUNT_FUEL_INJECT_CYLINDERS_T4, data->fuel_inject_red_cylinder);
+	if (err) {
+		LOG_ERR("Encoding error: %d returned at %s:%d", err, __FILE__, __LINE__);
+		goto exit;
+	}
+
+	err = json_add_number(ai_results_obj, DATA_TIMESTAMP, data->ai_ts);
+	if (err) {
+		LOG_ERR("Encoding error: %d returned at %s:%d", err, __FILE__, __LINE__);
+		cJSON_Delete(ai_results_obj);
+		return err;
+	}
+
+	err = op_code_handle(parent, op, object_label, ai_results_obj, parent_ref);
+	if (err) {
+		cJSON_Delete(ai_results_obj);
+		return err;
+	}
+
+	data->queued = false;
+
+	return 0;
+
+exit:
+	cJSON_Delete(ai_results_obj);
 	return err;
 }
 

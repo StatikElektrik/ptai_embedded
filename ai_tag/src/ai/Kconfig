@@ -1,0 +1,10 @@
+menuconfig AI_ANALYSIS
+	bool "AI Analysis Functions"
+
+if AI_ANALYSIS
+
+module = AI_ANALYSIS
+module-str = AI Analysis
+source "subsys/logging/Kconfig.template.log_config"
+
+endif # AI_ANALYSIS

@@ -45,6 +45,11 @@
 #define DATA_CONFIG	    "cfg"
 #define DATA_VERSION	    "version"
 #define DATA_IMPACT	    "impact"
+#define DATA_AI_RESULTS	    "ai"
+#define DATA_AI_RESULTS_NORMAL_MODE	    "n"
+#define DATA_AI_RESULTS_E_PRESSURE_REDUCTION_INTAKE_MANIFOLD	    "e1"
+#define DATA_AI_RESULTS_E_COMP_RAT_REDUCTION_CYLINDERS	    "e2"
+#define DATA_AI_RESULTS_E_REDUCTION_AMOUNT_FUEL_INJECT_CYLINDERS_T4	    "e3"
 
 #define DATA_MOVEMENT   "acc"
 #define DATA_MOVEMENT_X "x"

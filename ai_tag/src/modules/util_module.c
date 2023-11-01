@@ -24,6 +24,7 @@
 #include "events/location_module_event.h"
 #include "events/modem_module_event.h"
 #include "events/ui_module_event.h"
+#include "events/ai_module_event.h"
 
 LOG_MODULE_REGISTER(MODULE, CONFIG_UTIL_MODULE_LOG_LEVEL);
 
@@ -36,6 +37,7 @@ struct util_msg_data {
 		struct app_module_event app;
 		struct location_module_event location;
 		struct modem_module_event modem;
+		struct ai_module_event ai;
 	} module;
 };
 
@@ -147,6 +149,15 @@ static bool app_event_handler(const struct app_event_header *aeh)
 		struct data_module_event *event = cast_data_module_event(aeh);
 		struct util_msg_data util_msg = {
 			.module.data = *event
+		};
+
+		message_handler(&util_msg);
+	}
+	
+	if (is_ai_module_event(aeh)) {
+		struct ai_module_event *event = cast_ai_module_event(aeh);
+		struct util_msg_data util_msg = {
+			.module.ai = *event
 		};
 
 		message_handler(&util_msg);
@@ -337,5 +348,6 @@ APP_EVENT_SUBSCRIBE_EARLY(MODULE, location_module_event);
 APP_EVENT_SUBSCRIBE_EARLY(MODULE, ui_module_event);
 APP_EVENT_SUBSCRIBE_EARLY(MODULE, sensor_module_event);
 APP_EVENT_SUBSCRIBE_EARLY(MODULE, data_module_event);
+APP_EVENT_SUBSCRIBE_EARLY(MODULE, ai_module_event);
 
 SYS_INIT(setup, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
