@@ -41,7 +41,7 @@
  * @param lower_range The lower limit of the desired range.
  * @return A random double value within the specified range.
  */
-static double get_random_value_range(double upper_range, double lower_range)
+static double get_random_value_range(double lower_range, double upper_range)
 {
     uint32_t rand_val = sys_rand32_get();                 // Get a 32-bit random value
     double random_double = (double)rand_val / UINT32_MAX; // Scale to [0.0, 1.0]
