@@ -1,0 +1,42 @@
+{
+  "name": "DieselMotor",
+  "description": "Device for analysing diesel motors",
+  "image": null,
+  "type": "DEFAULT",
+  "transportType": "COAP",
+  "provisionType": "ALLOW_CREATE_NEW_DEVICES",
+  "defaultRuleChainId": null,
+  "defaultDashboardId": null,
+  "defaultQueueName": null,
+  "profileData": {
+    "configuration": {
+      "type": "DEFAULT"
+    },
+    "transportConfiguration": {
+      "type": "COAP",
+      "coapDeviceTypeConfiguration": {
+        "coapDeviceType": "DEFAULT",
+        "transportPayloadTypeConfiguration": {
+          "transportPayloadType": "JSON"
+        }
+      },
+      "clientSettings": {
+        "powerMode": "PSM",
+        "psmActivityTimer": 10000,
+        "edrxCycle": null,
+        "pagingTransmissionWindow": null
+      }
+    },
+    "provisionConfiguration": {
+      "type": "ALLOW_CREATE_NEW_DEVICES",
+      "provisionDeviceSecret": "provision-device-secret"
+    },
+    "alarms": null
+  },
+  "provisionDeviceKey": "provision-device-key",
+  "firmwareId": null,
+  "softwareId": null,
+  "defaultEdgeRuleChainId": null,
+  "externalId": null,
+  "default": false
+}
